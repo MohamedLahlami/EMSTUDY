@@ -13,9 +13,9 @@ import java.util.List;
 
 @Entity
 @Data
-@Table(name = "teacher")
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "teachers")
 public class Teacher extends User {
 
     private String bio;

@@ -11,14 +11,14 @@ import java.util.List;
 
 @Entity
 @Data
-@Table(name = "course")
+@Table(name = "courses")
 @AllArgsConstructor
 @NoArgsConstructor
 public class Course {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private long courseId;
+    private Long courseId;
 
     private String joinCode;
     private String Name;
