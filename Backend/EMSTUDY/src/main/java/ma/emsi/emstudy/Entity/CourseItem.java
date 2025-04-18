@@ -19,12 +19,12 @@ public abstract class CourseItem {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long itemId;
+    private String title;
+    private boolean isCompleted;
+    private LocalDateTime addDate;
 
     @ManyToOne
     @JoinColumn(name = "course_id")
     @JsonBackReference
     private Course course;
-
-    private boolean isCompleted;
-    private LocalDateTime addDate;
 }
