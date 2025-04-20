@@ -22,28 +22,23 @@ public class UserService {
         return userRepo.existsByEmail(email);
     }
 
-    // Create a new user (Teacher or Student)
     public <T extends User> T createUser(T user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepo.save(user);
     }
 
-    // Retrieve all users
     public List<User> findAll() {
         return userRepo.findAll();
     }
 
-    // Find a user by username
     public Optional<User> findByUsername(String username) {
         return userRepo.findByUsername(username);
     }
 
-    // Find a user by ID
     public Optional<User> findById(Long id) {
         return userRepo.findById(id);
     }
 
-    // Delete a user by ID
     public void deleteUser(Long id) {
         userRepo.deleteById(id);
     }

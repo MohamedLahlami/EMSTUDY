@@ -2,9 +2,15 @@ package ma.emsi.emstudy.Controller;
 
 
 import lombok.RequiredArgsConstructor;
+import ma.emsi.emstudy.Entity.Student;
+import ma.emsi.emstudy.Entity.Teacher;
+import ma.emsi.emstudy.Entity.User;
 import ma.emsi.emstudy.Security.AuthenticationService;
+import ma.emsi.emstudy.Service.UserService;
 import ma.emsi.emstudy.dto.AuthResponse;
 import ma.emsi.emstudy.dto.LoginRequest;
+import ma.emsi.emstudy.dto.UserDto;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/auth")
 public class AuthController {
 
-    public final AuthenticationService authenticationService;
+    private final UserService userService;
+    private final AuthenticationService authenticationService;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {
@@ -31,6 +38,34 @@ public class AuthController {
                 .expiresIn(86400L)
                 .build();
         return ResponseEntity.ok(authResponse);
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> addTeacher(@RequestBody UserDto userDto) {
+        if (userService.existsByEmail(userDto.getEmail())) {
+            return new ResponseEntity<>("User with this email already exists", HttpStatus.CONFLICT);
+        }
+        User user;
+        switch (userDto.getRole()){
+            case "STUDENT":
+                Student student = new Student();
+                student.setEmail(userDto.getEmail());
+                student.setPassword(userDto.getPassword());
+                student.setUsername(userDto.getUsername());
+                student.setRole("STUDENT");
+                student.setStudentGroup(userDto.getStudentGroup());
+                return new ResponseEntity<>(student, HttpStatus.CREATED);
+            case "TEACHER":
+                Teacher teacher = new Teacher();
+                teacher.setEmail(userDto.getEmail());
+                teacher.setPassword(userDto.getPassword());
+                teacher.setUsername(userDto.getUsername());
+                teacher.setRole("TEACHER");
+                teacher.setBio(userDto.getBio());
+                return new ResponseEntity<>(userService.createUser(teacher), HttpStatus.CREATED);
+            default:
+                return new ResponseEntity<>("Invalid role", HttpStatus.BAD_REQUEST);
+        }
     }
 
 }

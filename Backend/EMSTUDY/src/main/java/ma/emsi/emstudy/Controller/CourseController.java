@@ -2,8 +2,9 @@ package ma.emsi.emstudy.Controller;
 
 import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.Course;
+import ma.emsi.emstudy.Entity.Teacher;
 import ma.emsi.emstudy.Service.CourseService;
-import org.springframework.beans.factory.annotation.Autowired;
+import ma.emsi.emstudy.Service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,11 +17,23 @@ import java.util.List;
 public class CourseController {
 
     private final CourseService courseService;
+    private final UserService userService;
 
     @PostMapping("/add")
-    public ResponseEntity<Course> addCourse(@RequestBody Course course) {
-        Course createdCourse = courseService.addCourse(course);
-        return new ResponseEntity<>(createdCourse, HttpStatus.CREATED);
+    public ResponseEntity<?> addCourse(@RequestBody Course course, @RequestAttribute("userId") Long userId) {
+        if (userId == null) {
+            return new ResponseEntity<>("User not authenticated", HttpStatus.UNAUTHORIZED);
+        }
+        return userService.findById(userId).map(user -> {
+            if (user.getRole().equals("Teacher")) {
+                Teacher teacher = (Teacher) user;
+                course.setTeacher(teacher);
+                Course createdCourse = courseService.addCourse(course);
+                return new ResponseEntity<>(createdCourse, HttpStatus.CREATED);
+            } else {
+                return new ResponseEntity<>("Only teachers can create courses", HttpStatus.FORBIDDEN);
+            }
+        }).orElse(new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND));
     }
 
     @GetMapping("/all")
