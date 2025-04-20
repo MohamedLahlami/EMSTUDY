@@ -2,16 +2,11 @@ package ma.emsi.emstudy.Controller;
 
 
 import lombok.RequiredArgsConstructor;
-import ma.emsi.emstudy.Entity.User;
-import ma.emsi.emstudy.Repository.UserRepo;
 import ma.emsi.emstudy.Security.AuthenticationService;
 import ma.emsi.emstudy.dto.AuthResponse;
 import ma.emsi.emstudy.dto.LoginRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
