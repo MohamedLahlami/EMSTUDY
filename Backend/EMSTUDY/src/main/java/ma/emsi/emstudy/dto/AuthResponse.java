@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class AuthResponse {
     private String token;
-    private long expiresIn;
+    private Long expiresIn;
 }

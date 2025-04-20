@@ -16,13 +16,19 @@ public class UserController {
     private UserService userService;
 
     @PostMapping("/addTeacher")
-    public ResponseEntity<Teacher> addTeacher(@RequestBody Teacher teacher) {
+    public ResponseEntity<?> addTeacher(@RequestBody Teacher teacher) {
+        if (userService.existsByEmail(teacher.getEmail())) {
+            return new ResponseEntity<>("User with this email already exists", HttpStatus.CONFLICT);
+        }
         Teacher createdTeacher = (Teacher) userService.createUser(teacher);
         return new ResponseEntity<>(createdTeacher, HttpStatus.CREATED);
     }
 
     @PostMapping("/addStudent")
-    public ResponseEntity<Student> addStudent(@RequestBody Student student) {
+    public ResponseEntity<?> addStudent(@RequestBody Student student) {
+        if (userService.existsByEmail(student.getEmail())) {
+            return new ResponseEntity<>("User with this email already exists", HttpStatus.CONFLICT);
+        }
         Student createdStudent = (Student) userService.createUser(student);
         return new ResponseEntity<>(createdStudent, HttpStatus.CREATED);
     }

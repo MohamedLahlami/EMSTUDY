@@ -18,6 +18,10 @@ public class UserService {
     @Autowired
     private UserRepo userRepo;
 
+    public boolean existsByEmail(String email) {
+        return userRepo.existsByEmail(email);
+    }
+
     // Create a new user (Teacher or Student)
     public <T extends User> T createUser(T user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));

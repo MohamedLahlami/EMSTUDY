@@ -11,7 +11,7 @@ import java.util.UUID;
 @Entity
 @Data
 @Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name = "role", discriminatorType = DiscriminatorType.STRING)
+@DiscriminatorColumn(name = "role")
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "users")
@@ -23,5 +23,6 @@ public abstract class User {
     private String username;
     private String password;
     private String email;
+    @Column(insertable = false, updatable = false)
     private String role;
 }
