@@ -1,12 +1,8 @@
 package ma.emsi.emstudy.Entity;
 
-
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 
@@ -14,15 +10,13 @@ import java.time.LocalDate;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "enrollments")
+@Table(name = "completed_course_items")
 @Builder
-public class Enrollment {
+public class CompletedCourseItem {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long enrollmentId;
-    private LocalDate enrollmentDate;
-    private LocalDate completionDate;
+    @GeneratedValue
+    private Long completedCourseItemId;
 
     @ManyToOne
     @JoinColumn(name = "student_id")
@@ -34,4 +28,10 @@ public class Enrollment {
     @JsonBackReference
     private Course course;
 
+    @ManyToOne
+    @JoinColumn(name = "course_item_id")
+    @JsonBackReference
+    private CourseItem courseItem;
+
+    private LocalDate completedAt; // optional
 }

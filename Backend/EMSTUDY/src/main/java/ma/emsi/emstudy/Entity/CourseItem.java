@@ -1,12 +1,14 @@
 package ma.emsi.emstudy.Entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Data
@@ -20,8 +22,14 @@ public abstract class CourseItem {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long itemId;
     private String title;
-    private boolean isCompleted;
     private LocalDateTime addDate;
+
+    @Column(insertable = false, updatable = false)
+    private String itemType;
+
+    @OneToMany(mappedBy = "courseItem", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<CompletedCourseItem> completedCourseItems;
 
     @ManyToOne
     @JoinColumn(name = "course_id")

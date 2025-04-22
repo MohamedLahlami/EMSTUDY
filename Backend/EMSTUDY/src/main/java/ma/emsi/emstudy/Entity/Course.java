@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -14,6 +15,7 @@ import java.util.List;
 @Table(name = "courses")
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class Course {
 
     @Id
@@ -29,8 +31,26 @@ public class Course {
     @JsonBackReference
     private Teacher teacher;
 
-    @OneToMany(mappedBy = "course", cascade = CascadeType.REMOVE)
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<CourseItem> courseItems;
 
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<CompletedCourseItem> completedCourseItems;
+
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<Enrollment> enrollments;
+
+    @PrePersist
+    protected void generateJoinCode() {
+        if (this.joinCode == null) {
+            StringBuilder code = new StringBuilder();
+            for (int i = 0; i < 8; i++) {
+                code.append((char) ('A' + (int) (Math.random() * 26)));
+            }
+            this.joinCode = code.toString();
+        }
+    }
 }

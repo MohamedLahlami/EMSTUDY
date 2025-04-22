@@ -1,6 +1,5 @@
 package ma.emsi.emstudy.Security;
 
-import ma.emsi.emstudy.Repository.AppUserDetailsService;
 import ma.emsi.emstudy.Repository.UserRepo;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

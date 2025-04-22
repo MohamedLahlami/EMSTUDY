@@ -21,7 +21,15 @@ public class Student extends User {
     private String studentGroup;
 
 
-    @OneToMany(mappedBy = "student", cascade = CascadeType.PERSIST)
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<Enrollment> enrollments;
+
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<CompletedCourseItem> completedCourseItems;
+
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<Submission> submissions;
 }
