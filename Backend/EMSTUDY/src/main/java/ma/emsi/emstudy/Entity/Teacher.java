@@ -20,7 +20,7 @@ public class Teacher extends User {
 
     private String bio;
 
-    @OneToMany(mappedBy = "teacher", cascade = CascadeType.REMOVE)
+    @OneToMany(mappedBy = "teacher", cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<Course> courses;
 }

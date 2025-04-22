@@ -2,6 +2,7 @@ package ma.emsi.emstudy.Entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.boot.autoconfigure.web.WebProperties;
@@ -11,9 +12,11 @@ import org.springframework.boot.autoconfigure.web.WebProperties;
 @Table(name = "course_materials")
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class CourseMaterial extends CourseItem{
 
-    private String type;
+    @Enumerated(EnumType.STRING)
+    private CourseMaterialType courseMaterialType;
 
     private String url;
 

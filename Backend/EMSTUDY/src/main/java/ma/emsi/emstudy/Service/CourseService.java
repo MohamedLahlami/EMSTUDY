@@ -1,6 +1,8 @@
 package ma.emsi.emstudy.Service;
 
+import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.Course;
+import ma.emsi.emstudy.Entity.CourseItem;
 import ma.emsi.emstudy.Repository.CourseRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -8,12 +10,16 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CourseService {
-
-    @Autowired
-    private CourseRepo courseRepo;
+    private final CourseRepo courseRepo;
 
     public Course addCourse(Course course) {
+        if (course.getCourseItems() != null) {
+            for (CourseItem item : course.getCourseItems()) {
+                item.setCourse(course);
+            }
+        }
         return courseRepo.save(course);
     }
 

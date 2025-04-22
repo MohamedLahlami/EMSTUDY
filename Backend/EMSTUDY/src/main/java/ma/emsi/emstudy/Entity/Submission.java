@@ -1,25 +1,40 @@
 package ma.emsi.emstudy.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Entity
 @Data
 @Table(name = "submissions")
+@NoArgsConstructor
+@AllArgsConstructor
 public class Submission {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
+    private Long submissionId;
 
-    private String type;
     private LocalDateTime submissionDate;
+    private float score;
 
-    @Enumerated(EnumType.STRING)
-    private Status status;
+    @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<Answer> answers;
 
-    @OneToOne
-    @JoinColumn(name = "gradable_item_id")
-    private GradableItem gradableItem;
+    @ManyToOne
+    @JoinColumn(name = "student_id")
+    @JsonBackReference
+    private Quiz quiz;
+
+    @ManyToOne
+    @JoinColumn(name = "student_id")
+    @JsonBackReference
+    private Student student;
 }

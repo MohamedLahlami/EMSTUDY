@@ -1,5 +1,6 @@
 package ma.emsi.emstudy.Service;
 
+import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.User;
 import ma.emsi.emstudy.Repository.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,13 +11,12 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
-    @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
+    private final BCryptPasswordEncoder passwordEncoder;
 
-    @Autowired
-    private UserRepo userRepo;
+    private final UserRepo userRepo;
 
     public boolean existsByEmail(String email) {
         return userRepo.existsByEmail(email);

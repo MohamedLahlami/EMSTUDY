@@ -11,12 +11,16 @@ import java.util.List;
 @Entity
 @Data
 @Table(name = "quizzes")
-public class Quiz extends GradableItem{
+public class Quiz extends CourseItem {
 
     private int durationInMinutes;
     private boolean showCorrectAnswers;
 
-    @OneToMany(mappedBy = "quiz", cascade = CascadeType.REMOVE)
+    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<Question> questions;
+
+    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<Submission> Submissions;
 }
