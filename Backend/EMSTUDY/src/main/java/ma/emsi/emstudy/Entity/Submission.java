@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 @Entity
 @Data
@@ -24,12 +23,11 @@ public class Submission {
     private LocalDateTime submissionDate;
     private float score;
 
-    @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL)
-    @JsonManagedReference
+    @ManyToMany
     private List<Answer> answers;
 
     @ManyToOne
-    @JoinColumn(name = "student_id")
+    @JoinColumn(name = "quiz_id")
     @JsonBackReference
     private Quiz quiz;
 

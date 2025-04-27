@@ -34,6 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (userDetails instanceof AppUserDetails) {
                     // TODO: check userId or user_id
                     request.setAttribute("userId", ((AppUserDetails) userDetails).getId());
+                    System.out.println(request.getAttribute("userId"));
                 }
             }
         } catch (Exception e) {

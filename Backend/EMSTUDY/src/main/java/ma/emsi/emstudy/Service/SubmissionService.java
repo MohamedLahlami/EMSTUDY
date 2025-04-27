@@ -24,7 +24,7 @@ public class SubmissionService {
     }
 
     public List<Submission> getSubmissionsByQuizAndStudent(Long quizId, Long studentId) {
-        return submissionRepo.findByQuizIdAndStudentUserId(quizId, studentId);
+        return submissionRepo.findByQuiz_ItemIdAndStudent_UserId(quizId, studentId);
     }
 
     public Submission createSubmission(Quiz quiz, Student student, List<Answer> answers) {

@@ -54,7 +54,7 @@ public class AuthController {
                 student.setUsername(userDto.getUsername());
                 student.setRole("STUDENT");
                 student.setStudentGroup(userDto.getStudentGroup());
-                return new ResponseEntity<>(student, HttpStatus.CREATED);
+                return new ResponseEntity<>(userService.createUser(student), HttpStatus.CREATED);
             case "TEACHER":
                 Teacher teacher = new Teacher();
                 teacher.setEmail(userDto.getEmail());

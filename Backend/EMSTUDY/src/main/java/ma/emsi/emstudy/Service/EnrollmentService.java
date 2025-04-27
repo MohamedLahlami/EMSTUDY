@@ -33,7 +33,7 @@ public class EnrollmentService {
     }
     
     public List<Enrollment> getEnrollmentsByCourse(Long courseId) {
-        return enrollmentRepo.findByCourseId(courseId);
+        return enrollmentRepo.findByCourse_CourseId(courseId);
     }
     
     public Enrollment updateEnrollment(Long id, Enrollment enrollment) {

@@ -14,7 +14,7 @@ import java.util.List;
 @Data
 @Table(name = "course_items")
 @Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name = "item_type")
+@DiscriminatorColumn(name = "itemType")
 @AllArgsConstructor
 @NoArgsConstructor
 public abstract class CourseItem {

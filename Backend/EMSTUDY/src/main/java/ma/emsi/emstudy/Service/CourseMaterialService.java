@@ -21,8 +21,8 @@ public class CourseMaterialService extends CourseItemService<CourseMaterial> {
     @Override
     protected void updateFields(CourseMaterial existingItem, CourseMaterial updatedItem) {
         existingItem.setTitle(updatedItem.getTitle());
-        existingItem.setCompleted(updatedItem.isCompleted());
-        existingItem.setContent(updatedItem.getContent());
-        existingItem.setFileUrl(updatedItem.getFileUrl());
+        existingItem.setCourseMaterialType(updatedItem.getCourseMaterialType());
+        existingItem.setUrl(updatedItem.getUrl());
+        existingItem.setDescription(updatedItem.getDescription());
     }
 }

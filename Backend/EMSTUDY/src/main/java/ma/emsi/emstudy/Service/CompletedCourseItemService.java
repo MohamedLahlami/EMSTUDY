@@ -27,7 +27,7 @@ public class CompletedCourseItemService {
     }
 
     public CompletedCourseItem findByStudentAndCourse(Long userId, Long courseId) {
-        return completedCourseItemRepo.findByStudentUserIdAndCourseId(userId, courseId);
+        return completedCourseItemRepo.findByStudentUserIdAndCourse_CourseId(userId, courseId);
     }
 
     public List<CompletedCourseItem> findAll() {

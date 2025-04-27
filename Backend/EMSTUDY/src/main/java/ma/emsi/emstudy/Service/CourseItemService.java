@@ -29,7 +29,7 @@ public abstract class CourseItemService<T extends CourseItem> {
     }
 
     public List<T> getCourseItemsByCourseId(Long courseId) {
-        return (List<T>) courseItemRepo.findByCourseId(courseId);
+        return (List<T>) courseItemRepo.findByCourse_CourseId(courseId);
     }
 
     public T updateCourseItem(Long id, T updatedItem) {

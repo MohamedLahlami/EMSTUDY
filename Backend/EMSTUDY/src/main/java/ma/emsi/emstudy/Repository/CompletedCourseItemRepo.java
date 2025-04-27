@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CompletedCourseItemRepo extends JpaRepository<CompletedCourseItem, Long> {
-    CompletedCourseItem findByStudentUserIdAndCourseId(Long userId, Long courseId);
+    CompletedCourseItem findByStudentUserIdAndCourse_CourseId(Long studentUserId, Long courseCourseId);
 }
