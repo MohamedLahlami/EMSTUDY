@@ -1,7 +1,9 @@
 package ma.emsi.emstudy.Service;
 
 import lombok.RequiredArgsConstructor;
+import ma.emsi.emstudy.Entity.Answer;
 import ma.emsi.emstudy.Entity.CourseItem;
+import ma.emsi.emstudy.Exception.ResourceNotFoundException;
 import ma.emsi.emstudy.Repository.CourseItemRepo;
 import ma.emsi.emstudy.Repository.CompletedCourseItemRepo;
 import org.springframework.stereotype.Service;
@@ -11,11 +13,11 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public abstract class CourseItemService<T extends CourseItem> {
+public class CourseItemService<T extends CourseItem> {
     protected final CourseItemRepo courseItemRepo;
     protected final CompletedCourseItemRepo completedCourseItemRepo;
 
-    public T addCourseItem(T courseItem) {
+    public T addCourseItem(T courseItem, Long courseId) {
         courseItem.setAddDate(LocalDateTime.now());
         return (T) courseItemRepo.save(courseItem);
     }
@@ -25,7 +27,8 @@ public abstract class CourseItemService<T extends CourseItem> {
     }
 
     public T getCourseItemById(Long id) {
-        return (T) courseItemRepo.findById(id).orElse(null);
+        return (T) courseItemRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("CourseItem not found with id: " + id));
     }
 
     public List<T> getCourseItemsByCourseId(Long courseId) {
@@ -33,17 +36,17 @@ public abstract class CourseItemService<T extends CourseItem> {
     }
 
     public T updateCourseItem(Long id, T updatedItem) {
-        T existingItem = (T) courseItemRepo.findById(id).orElse(null);
-        if (existingItem != null) {
-            updateFields(existingItem, updatedItem);
-            return (T) courseItemRepo.save(existingItem);
-        }
-        return null;
+        T existingItem = getCourseItemById(id);
+        updateFields(existingItem, updatedItem);
+        return (T) courseItemRepo.save(existingItem);
     }
 
-    protected abstract void updateFields(T existingItem, T updatedItem);
+    protected void updateFields(T existingItem, T updatedItem) {
+        existingItem.setTitle(updatedItem.getTitle());
+    }
 
     public void deleteCourseItem(Long id) {
         courseItemRepo.deleteById(id);
     }
+
 }

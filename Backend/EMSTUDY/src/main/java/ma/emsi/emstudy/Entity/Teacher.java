@@ -7,6 +7,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
@@ -21,6 +22,6 @@ public class Teacher extends User {
     private String bio;
 
     @OneToMany(mappedBy = "teacher", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<Course> courses;
+    @JsonManagedReference(value = "teacher_courses")
+    private List<Course> courses = new ArrayList<>();
 }

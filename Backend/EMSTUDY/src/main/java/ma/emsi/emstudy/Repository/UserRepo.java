@@ -1,5 +1,6 @@
 package ma.emsi.emstudy.Repository;
 
+import ma.emsi.emstudy.Entity.Student;
 import ma.emsi.emstudy.Entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -13,4 +14,6 @@ public interface UserRepo extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+    Optional<Student> getUserByUserId(Long userId);
 }

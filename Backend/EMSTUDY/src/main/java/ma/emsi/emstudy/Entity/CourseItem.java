@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -29,10 +30,10 @@ public abstract class CourseItem {
 
     @OneToMany(mappedBy = "courseItem", cascade = CascadeType.ALL)
     @JsonManagedReference
-    private List<CompletedCourseItem> completedCourseItems;
+    private List<CompletedCourseItem> completedCourseItems = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "course_id")
-    @JsonBackReference
+    @JsonBackReference(value = "course_courseItems")
     private Course course;
 }

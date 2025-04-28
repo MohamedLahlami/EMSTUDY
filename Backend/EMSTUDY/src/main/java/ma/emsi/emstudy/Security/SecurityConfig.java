@@ -34,7 +34,8 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(registry -> registry
                         .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/course/**").permitAll()
+                        .requestMatchers("/course/**").hasAuthority("Teacher")
+                        .requestMatchers(HttpMethod.POST, "/test/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)

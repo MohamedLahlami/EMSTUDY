@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -28,8 +29,7 @@ public class CourseController {
             if (user.getRole().equals("Teacher")) {
                 Teacher teacher = (Teacher) user;
                 course.setTeacher(teacher);
-                Course createdCourse = courseService.addCourse(course);
-                return new ResponseEntity<>(createdCourse, HttpStatus.CREATED);
+                return new ResponseEntity<>(courseService.addCourse(course), HttpStatus.CREATED);
             } else {
                 return new ResponseEntity<>("Only teachers can create courses", HttpStatus.FORBIDDEN);
             }

@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -28,20 +29,20 @@ public class Course {
 
     @ManyToOne
     @JoinColumn(name = "teacher_id")
-    @JsonBackReference
+    @JsonBackReference(value = "teacher_courses")
     private Teacher teacher;
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<CourseItem> courseItems;
+    @JsonManagedReference(value = "course_courseItems")
+    private List<CourseItem> courseItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<CompletedCourseItem> completedCourseItems;
+    @JsonManagedReference(value = "course_completedCourseItems")
+    private List<CompletedCourseItem> completedCourseItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<Enrollment> enrollments;
+    @JsonManagedReference(value = "course_enrollments")
+    private List<Enrollment> enrollments = new ArrayList<>();
 
     @PrePersist
     protected void generateJoinCode() {

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 public class CourseMaterialService extends CourseItemService<CourseMaterial> {
     private final CourseMaterialRepo courseMaterialRepo;
 
-    public CourseMaterialService(CourseItemRepo courseItemRepo, 
+    public CourseMaterialService(CourseItemRepo courseItemRepo,
                                 CompletedCourseItemRepo completedCourseItemRepo,
                                 CourseMaterialRepo courseMaterialRepo) {
         super(courseItemRepo, completedCourseItemRepo);
@@ -20,7 +20,7 @@ public class CourseMaterialService extends CourseItemService<CourseMaterial> {
 
     @Override
     protected void updateFields(CourseMaterial existingItem, CourseMaterial updatedItem) {
-        existingItem.setTitle(updatedItem.getTitle());
+        super.updateFields(existingItem, updatedItem);
         existingItem.setCourseMaterialType(updatedItem.getCourseMaterialType());
         existingItem.setUrl(updatedItem.getUrl());
         existingItem.setDescription(updatedItem.getDescription());

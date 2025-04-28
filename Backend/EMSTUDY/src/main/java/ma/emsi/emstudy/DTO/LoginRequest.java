@@ -1,4 +1,4 @@
-package ma.emsi.emstudy.dto;
+package ma.emsi.emstudy.DTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AuthResponse {
-    private String token;
-    private Long expiresIn;
+public class LoginRequest {
+
+    private String email;
+    private String password;
 }

@@ -1,13 +1,12 @@
 package ma.emsi.emstudy.Entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -24,7 +23,7 @@ public class Submission {
     private float score;
 
     @ManyToMany
-    private List<Answer> answers;
+    private List<Answer> answers = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "quiz_id")
@@ -33,6 +32,6 @@ public class Submission {
 
     @ManyToOne
     @JoinColumn(name = "student_id")
-    @JsonBackReference
+    @JsonBackReference(value = "student_submissions")
     private Student student;
 }

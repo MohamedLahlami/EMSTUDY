@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -22,14 +23,14 @@ public class Student extends User {
 
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<Enrollment> enrollments;
+    @JsonManagedReference(value = "student_enrollments")
+    private List<Enrollment> enrollments = new ArrayList<>();
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<CompletedCourseItem> completedCourseItems;
+    @JsonManagedReference(value = "student_completedCourseItems")
+    private List<CompletedCourseItem> completedCourseItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<Submission> submissions;
+    @JsonManagedReference(value = "student_submissions")
+    private List<Submission> submissions = new ArrayList<>();
 }

@@ -1,8 +1,13 @@
 package ma.emsi.emstudy.Service;
 
 import lombok.RequiredArgsConstructor;
+import ma.emsi.emstudy.Entity.Course;
 import ma.emsi.emstudy.Entity.Enrollment;
+import ma.emsi.emstudy.Entity.Student;
+import ma.emsi.emstudy.Exception.ResourceNotFoundException;
+import ma.emsi.emstudy.Repository.CourseRepo;
 import ma.emsi.emstudy.Repository.EnrollmentRepo;
+import ma.emsi.emstudy.Repository.UserRepo;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -13,22 +18,35 @@ import java.util.List;
 public class EnrollmentService {
     
     private final EnrollmentRepo enrollmentRepo;
-    
-    public Enrollment createEnrollment(Enrollment enrollment) {
+    private final UserRepo userRepo;
+    private final CourseRepo courseRepo;
+
+    public Enrollment createEnrollment(Long studentId, Long courseId, String joinCode) {
+        Course course = courseRepo.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+        if (!course.getJoinCode().equals(joinCode)) {
+            throw new ResourceNotFoundException("Invalid join code");
+        }
+        Student student = userRepo.getUserByUserId(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
+        Enrollment enrollment = Enrollment.builder()
+                .student(student)
+                .course(course)
+                .build();
         enrollment.setEnrollmentDate(LocalDate.now());
         return enrollmentRepo.save(enrollment);
     }
     
-    public Enrollment getEnrollment(Long id) {
+    public Enrollment getEnrollmentById(Long id) {
         return enrollmentRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Enrollment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
     }
     
     public List<Enrollment> getAllEnrollments() {
         return enrollmentRepo.findAll();
     }
     
-    public List<Enrollment> getEnrollmentsByStudent(Long studentId) {
+    public List<Enrollment> getEnrollmentsByStudentId(Long studentId) {
         return enrollmentRepo.findByStudentUserId(studentId);
     }
     
@@ -37,7 +55,7 @@ public class EnrollmentService {
     }
     
     public Enrollment updateEnrollment(Long id, Enrollment enrollment) {
-        Enrollment existingEnrollment = getEnrollment(id);
+        Enrollment existingEnrollment = getEnrollmentById(id);
         existingEnrollment.setCompletionDate(enrollment.getCompletionDate());
         existingEnrollment.setStudent(enrollment.getStudent());
         existingEnrollment.setCourse(enrollment.getCourse());
@@ -49,7 +67,7 @@ public class EnrollmentService {
     }
     
     public void completeEnrollment(Long id) {
-        Enrollment enrollment = getEnrollment(id);
+        Enrollment enrollment = getEnrollmentById(id);
         enrollment.setCompletionDate(LocalDate.now());
         enrollmentRepo.save(enrollment);
     }

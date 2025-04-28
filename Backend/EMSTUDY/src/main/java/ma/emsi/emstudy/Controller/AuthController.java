@@ -4,12 +4,11 @@ package ma.emsi.emstudy.Controller;
 import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.Student;
 import ma.emsi.emstudy.Entity.Teacher;
-import ma.emsi.emstudy.Entity.User;
 import ma.emsi.emstudy.Security.AuthenticationService;
 import ma.emsi.emstudy.Service.UserService;
-import ma.emsi.emstudy.dto.AuthResponse;
-import ma.emsi.emstudy.dto.LoginRequest;
-import ma.emsi.emstudy.dto.UserDto;
+import ma.emsi.emstudy.DTO.AuthResponse;
+import ma.emsi.emstudy.DTO.LoginRequest;
+import ma.emsi.emstudy.DTO.UserDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -41,26 +40,25 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> addTeacher(@RequestBody UserDto userDto) {
+    public ResponseEntity<?> addTeacher(@RequestBody UserDTO userDto) {
         if (userService.existsByEmail(userDto.getEmail())) {
             return new ResponseEntity<>("User with this email already exists", HttpStatus.CONFLICT);
         }
-        User user;
         switch (userDto.getRole()){
-            case "STUDENT":
+            case "Student":
                 Student student = new Student();
                 student.setEmail(userDto.getEmail());
                 student.setPassword(userDto.getPassword());
                 student.setUsername(userDto.getUsername());
-                student.setRole("STUDENT");
+                student.setRole("Student");
                 student.setStudentGroup(userDto.getStudentGroup());
                 return new ResponseEntity<>(userService.createUser(student), HttpStatus.CREATED);
-            case "TEACHER":
+            case "Teacher":
                 Teacher teacher = new Teacher();
                 teacher.setEmail(userDto.getEmail());
                 teacher.setPassword(userDto.getPassword());
                 teacher.setUsername(userDto.getUsername());
-                teacher.setRole("TEACHER");
+                teacher.setRole("Teacher");
                 teacher.setBio(userDto.getBio());
                 return new ResponseEntity<>(userService.createUser(teacher), HttpStatus.CREATED);
             default:
