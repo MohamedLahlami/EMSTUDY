@@ -1,6 +1,5 @@
 package ma.emsi.emstudy.Controller;
 
-import ma.emsi.emstudy.Entity.Answer;
 import ma.emsi.emstudy.Entity.Quiz;
 import ma.emsi.emstudy.Service.QuizService;
 import org.springframework.http.ResponseEntity;
@@ -9,21 +8,47 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/quizzes")
+@RequestMapping("/quizzes")
 public class QuizController extends CourseItemController<Quiz> {
 
     public QuizController(QuizService service) {
         super(service);
     }
 
-    @PostMapping
-    public ResponseEntity<Quiz> createQuiz(@RequestBody Quiz quiz) {
-        return ResponseEntity.ok(service.addCourseItem(quiz));
+    @Override
+    @PostMapping("/courses/{courseId}")
+    public ResponseEntity<Quiz> createItem(@PathVariable Long courseId, @RequestBody Quiz quiz) {
+        return super.createItem(courseId, quiz);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Quiz> updateQuiz(@PathVariable Long id, @RequestBody Quiz quiz) {
-        Quiz updated = service.updateCourseItem(id, quiz);
-        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
+    @Override
+    @GetMapping("/courses/{courseId}")
+    public ResponseEntity<List<Quiz>> getItemsByCourse(@PathVariable Long courseId) {
+        return super.getItemsByCourse(courseId);
+    }
+
+    @Override
+    @GetMapping("/{itemId}")
+    public ResponseEntity<Quiz> getItem(@PathVariable Long itemId) {
+        return super.getItem(itemId);
+    }
+
+    @Override
+    @PutMapping("/{itemId}")
+    public ResponseEntity<Quiz> updateItem(@PathVariable Long itemId, @RequestBody Quiz quiz) {
+        return super.updateItem(itemId, quiz);
+    }
+
+    @Override
+    @DeleteMapping("/{itemId}")
+    public ResponseEntity<Void> deleteItem(@PathVariable Long itemId) {
+        return super.deleteItem(itemId);
+    }
+
+    // Quiz-specific endpoints can be added here
+    @GetMapping("/{quizId}/start")
+    public ResponseEntity<Quiz> startQuiz(@PathVariable Long quizId) {
+        Quiz quiz = service.getCourseItemById(quizId);
+        return ResponseEntity.ok(quiz);
     }
 }

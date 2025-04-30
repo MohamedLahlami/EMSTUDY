@@ -4,14 +4,17 @@ import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.Course;
 import ma.emsi.emstudy.Entity.Enrollment;
 import ma.emsi.emstudy.Entity.Student;
+import ma.emsi.emstudy.Entity.User;
 import ma.emsi.emstudy.Exception.ResourceNotFoundException;
 import ma.emsi.emstudy.Repository.CourseRepo;
 import ma.emsi.emstudy.Repository.EnrollmentRepo;
 import ma.emsi.emstudy.Repository.UserRepo;
+import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,19 +24,23 @@ public class EnrollmentService {
     private final UserRepo userRepo;
     private final CourseRepo courseRepo;
 
-    public Enrollment createEnrollment(Long studentId, Long courseId, String joinCode) {
-        Course course = courseRepo.findById(courseId)
-                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
-        if (!course.getJoinCode().equals(joinCode)) {
-            throw new ResourceNotFoundException("Invalid join code");
+    public Enrollment createEnrollment(Long studentId, String joinCode) throws BadRequestException, ResourceNotFoundException {
+        Course course = courseRepo.findByJoinCode(joinCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid join code"));
+        Optional<Enrollment> existingEnrollment = enrollmentRepo.findByStudentUserIdAndCourse_CourseId(studentId, course.getCourseId());
+        if (existingEnrollment.isPresent()){
+            throw new BadRequestException("Enrollment already exists");
         }
-        Student student = userRepo.getUserByUserId(studentId)
+        User user = userRepo.getUserByUserId(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
+        if (!(user instanceof Student student)) {
+            throw new ResourceNotFoundException("Only students can enroll in courses");
+        }
         Enrollment enrollment = Enrollment.builder()
                 .student(student)
                 .course(course)
+                .enrollmentDate(LocalDate.now())
                 .build();
-        enrollment.setEnrollmentDate(LocalDate.now());
         return enrollmentRepo.save(enrollment);
     }
     
@@ -50,7 +57,7 @@ public class EnrollmentService {
         return enrollmentRepo.findByStudentUserId(studentId);
     }
     
-    public List<Enrollment> getEnrollmentsByCourse(Long courseId) {
+    public List<Enrollment> getEnrollmentsByCourseId(Long courseId) {
         return enrollmentRepo.findByCourse_CourseId(courseId);
     }
     

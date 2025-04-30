@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.Answer;
 import ma.emsi.emstudy.Exception.ResourceNotFoundException;
 import ma.emsi.emstudy.Service.AnswerService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -23,12 +24,12 @@ public class AnswerController {
             @PathVariable Long questionId,
             @Valid @RequestBody Answer answer) {
         Answer createdAnswer = answerService.createAnswer(answer, questionId);
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(createdAnswer.getAnswerId())
-                .toUri();
-        return ResponseEntity.created(location).body(createdAnswer);
+//        URI location = ServletUriComponentsBuilder
+//                .fromCurrentRequest()
+//                .path("/{id}")
+//                .buildAndExpand(createdAnswer.getAnswerId())
+//                .toUri();
+        return new ResponseEntity<>(createdAnswer, HttpStatus.CREATED);
     }
 
     @GetMapping("/questions/{questionId}")

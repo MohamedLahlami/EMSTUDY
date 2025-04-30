@@ -2,14 +2,12 @@ package ma.emsi.emstudy.Controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import ma.emsi.emstudy.DTO.EnrollmentDTO;
 import ma.emsi.emstudy.Entity.Enrollment;
 import ma.emsi.emstudy.Service.EnrollmentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
-import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -19,18 +17,12 @@ public class EnrollmentController {
 
     private final EnrollmentService enrollmentService;
 
-    @PostMapping("/students/{studentId}/courses/{courseId}")
-    public ResponseEntity<Enrollment> createEnrollment(
-            @PathVariable Long studentId,
-            @PathVariable Long courseId,
-            @Valid @RequestBody Enrollment enrollment) {
-        Enrollment createdEnrollment = enrollmentService.createEnrollment(enrollment);
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(createdEnrollment.getEnrollmentId())
-                .toUri();
-        return ResponseEntity.created(location).body(createdEnrollment);
+    @PostMapping("/enroll")
+    public ResponseEntity<Enrollment> createEnrollment(@RequestBody EnrollmentDTO enrollmentDTO) {
+        Enrollment createdEnrollment = enrollmentService.createEnrollment(
+                enrollmentDTO.getStudentId(),
+                enrollmentDTO.getJoinCode());
+        return new ResponseEntity<>(createdEnrollment, HttpStatus.CREATED);
     }
 
     @GetMapping

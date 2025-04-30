@@ -1,7 +1,10 @@
 package ma.emsi.emstudy.Service;
 
+import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.Answer;
+import ma.emsi.emstudy.Entity.Question;
 import ma.emsi.emstudy.Repository.AnswerRepo;
+import ma.emsi.emstudy.Repository.QuestionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -9,12 +12,15 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class AnswerService {
 
-    @Autowired
-    private AnswerRepo answerRepo;
+    private final QuestionRepo questionRepo;
+    private final AnswerRepo answerRepo;
 
-    public Answer createAnswer(Answer answer) {
+    public Answer createAnswer(Answer answer, Long questionId) {
+        Question question = questionRepo.findById(questionId).orElseThrow(() -> new IllegalArgumentException("Question not found with id: " + questionId));
+        answer.setQuestion(question);
         return answerRepo.save(answer);
     }
 

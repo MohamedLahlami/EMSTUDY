@@ -2,10 +2,12 @@ package ma.emsi.emstudy.Service;
 
 import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.Answer;
+import ma.emsi.emstudy.Entity.Course;
 import ma.emsi.emstudy.Entity.CourseItem;
 import ma.emsi.emstudy.Exception.ResourceNotFoundException;
 import ma.emsi.emstudy.Repository.CourseItemRepo;
 import ma.emsi.emstudy.Repository.CompletedCourseItemRepo;
+import ma.emsi.emstudy.Repository.CourseRepo;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,9 +17,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CourseItemService<T extends CourseItem> {
     protected final CourseItemRepo courseItemRepo;
-    protected final CompletedCourseItemRepo completedCourseItemRepo;
+    private final CourseRepo courseRepo;
 
     public T addCourseItem(T courseItem, Long courseId) {
+        Course course  = courseRepo.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+        courseItem.setCourse(course);
         courseItem.setAddDate(LocalDateTime.now());
         return (T) courseItemRepo.save(courseItem);
     }

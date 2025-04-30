@@ -34,8 +34,14 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(registry -> registry
                         .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
+
                         .requestMatchers("/course/**").hasAuthority("Teacher")
-                        .requestMatchers(HttpMethod.POST, "/test/**").permitAll()
+                        .requestMatchers("/quizzes/**").hasAuthority("Teacher")
+                        .requestMatchers("/materials/**").hasAuthority("Teacher")
+                        .requestMatchers("/questions/**").hasAuthority("Teacher")
+                        .requestMatchers("/answers/**").hasAuthority("Teacher")
+
+                        .requestMatchers("/enrollments/**").hasAuthority("Student")
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
