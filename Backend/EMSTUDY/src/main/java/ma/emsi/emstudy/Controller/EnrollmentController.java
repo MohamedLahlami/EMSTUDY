@@ -2,8 +2,8 @@ package ma.emsi.emstudy.Controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import ma.emsi.emstudy.DTO.EnrollmentDTO;
 import ma.emsi.emstudy.Entity.Enrollment;
+import ma.emsi.emstudy.Exception.InvalidInputException;
 import ma.emsi.emstudy.Service.EnrollmentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,12 +18,16 @@ public class EnrollmentController {
     private final EnrollmentService enrollmentService;
 
     @PostMapping("/enroll")
-    public ResponseEntity<Enrollment> createEnrollment(@RequestBody EnrollmentDTO enrollmentDTO) {
-        Enrollment createdEnrollment = enrollmentService.createEnrollment(
-                enrollmentDTO.getStudentId(),
-                enrollmentDTO.getJoinCode());
+    public ResponseEntity<Enrollment> createEnrollment(@RequestParam String joinCode, @RequestAttribute("userId") Long userId) {
+        System.out.println("User ID: " + userId);
+        if (joinCode == null) {
+            throw new InvalidInputException("Join Code is required");
+        }
+        Enrollment createdEnrollment = enrollmentService.createEnrollment(userId, joinCode);
         return new ResponseEntity<>(createdEnrollment, HttpStatus.CREATED);
     }
+
+
 
     @GetMapping
     public ResponseEntity<List<Enrollment>> getAllEnrollments() {

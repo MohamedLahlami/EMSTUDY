@@ -25,10 +25,10 @@ public class Submission {
     @ManyToMany
     private List<Answer> answers = new ArrayList<>();
 
-    @ManyToOne
-    @JoinColumn(name = "quiz_id")
-    @JsonBackReference
-    private Quiz quiz;
+//    @ManyToOne
+//    @JoinColumn(name = "quiz_id")
+//    @JsonBackReference
+//    private Quiz quiz;
 
     @ManyToOne
     @JoinColumn(name = "student_id")

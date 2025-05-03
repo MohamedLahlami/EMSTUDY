@@ -1,20 +1,23 @@
 package ma.emsi.emstudy.Service;
 
 import lombok.RequiredArgsConstructor;
-import ma.emsi.emstudy.Entity.Answer;
-import ma.emsi.emstudy.Entity.Course;
-import ma.emsi.emstudy.Entity.CourseItem;
+import ma.emsi.emstudy.Entity.*;
 import ma.emsi.emstudy.Exception.ResourceNotFoundException;
 import ma.emsi.emstudy.Repository.CourseItemRepo;
 import ma.emsi.emstudy.Repository.CompletedCourseItemRepo;
 import ma.emsi.emstudy.Repository.CourseRepo;
+import ma.emsi.emstudy.Repository.UserRepo;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("unchecked")
 public class CourseItemService<T extends CourseItem> {
     protected final CourseItemRepo courseItemRepo;
     private final CourseRepo courseRepo;
@@ -32,8 +35,8 @@ public class CourseItemService<T extends CourseItem> {
     }
 
     public T getCourseItemById(Long id) {
-        return (T) courseItemRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("CourseItem not found with id: " + id));
+        CourseItem courseItem = courseItemRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("CourseItem not found with id: " + id));
+        return (T) courseItem;
     }
 
     public List<T> getCourseItemsByCourseId(Long courseId) {

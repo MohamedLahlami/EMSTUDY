@@ -34,4 +34,15 @@ public class CourseService {
     public void deleteCourse(Long id) {
         courseRepo.deleteById(id);
     }
+
+    public Course updateCourse(Course course) {
+        Course existingCourse = courseRepo.findById(course.getCourseId()).orElse(null);
+        if (existingCourse != null) {
+            existingCourse.setName(course.getName());
+            existingCourse.setDescription(course.getDescription());
+            existingCourse.setCourseItems(course.getCourseItems());
+            return courseRepo.save(existingCourse);
+        }
+        return null;
+    }
 }

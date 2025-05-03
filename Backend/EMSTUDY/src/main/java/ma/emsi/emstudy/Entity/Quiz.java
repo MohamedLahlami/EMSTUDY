@@ -21,7 +21,7 @@ public class Quiz extends CourseItem {
     @JsonManagedReference
     private List<Question> questions = new ArrayList<>();
 
-    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<Submission> Submissions = new ArrayList<>();
+//    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL)
+//    @JsonManagedReference
+//    private List<Submission> Submissions = new ArrayList<>();
 }

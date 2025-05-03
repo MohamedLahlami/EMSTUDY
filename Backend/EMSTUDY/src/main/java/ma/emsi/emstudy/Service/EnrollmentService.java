@@ -1,20 +1,22 @@
 package ma.emsi.emstudy.Service;
 
+import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.Course;
 import ma.emsi.emstudy.Entity.Enrollment;
 import ma.emsi.emstudy.Entity.Student;
-import ma.emsi.emstudy.Entity.User;
+import ma.emsi.emstudy.Exception.AlreadyEnrolledException;
 import ma.emsi.emstudy.Exception.ResourceNotFoundException;
 import ma.emsi.emstudy.Repository.CourseRepo;
 import ma.emsi.emstudy.Repository.EnrollmentRepo;
 import ma.emsi.emstudy.Repository.UserRepo;
 import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,26 +25,25 @@ public class EnrollmentService {
     private final EnrollmentRepo enrollmentRepo;
     private final UserRepo userRepo;
     private final CourseRepo courseRepo;
+    private final UserService userService;
+    private final StudentService studentService;
 
-    public Enrollment createEnrollment(Long studentId, String joinCode) throws BadRequestException, ResourceNotFoundException {
-        Course course = courseRepo.findByJoinCode(joinCode)
-                .orElseThrow(() -> new ResourceNotFoundException("Invalid join code"));
-        Optional<Enrollment> existingEnrollment = enrollmentRepo.findByStudentUserIdAndCourse_CourseId(studentId, course.getCourseId());
-        if (existingEnrollment.isPresent()){
-            throw new BadRequestException("Enrollment already exists");
-        }
-        User user = userRepo.getUserByUserId(studentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
-        if (!(user instanceof Student student)) {
-            throw new ResourceNotFoundException("Only students can enroll in courses");
-        }
-        Enrollment enrollment = Enrollment.builder()
-                .student(student)
-                .course(course)
-                .enrollmentDate(LocalDate.now())
-                .build();
-        return enrollmentRepo.save(enrollment);
-    }
+@Transactional
+public Enrollment createEnrollment(Long studentId, String joinCode) {
+    Course course = courseRepo.findByJoinCode(joinCode)
+            .orElseThrow(() -> new ResourceNotFoundException("Invalid join code"));
+    enrollmentRepo.findByStudentUserIdAndCourse_CourseId(studentId, course.getCourseId())
+            .ifPresent(enrollment -> {
+                throw new AlreadyEnrolledException("Already enrolled in this course");
+            });
+    Student student = studentService.getStudent(studentId);
+    Enrollment enrollment = Enrollment.builder()
+            .student(student)
+            .course(course)
+            .enrollmentDate(LocalDate.now())
+            .build();
+    return enrollmentRepo.save(enrollment);
+}
     
     public Enrollment getEnrollmentById(Long id) {
         return enrollmentRepo.findById(id)

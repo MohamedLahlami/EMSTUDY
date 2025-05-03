@@ -20,7 +20,7 @@ public class CourseController {
     private final CourseService courseService;
     private final UserService userService;
 
-    @PostMapping("/add")
+    @PostMapping
     public ResponseEntity<?> addCourse(@RequestBody Course course, @RequestAttribute("userId") Long userId) {
         if (userId == null) {
             return new ResponseEntity<>("User not authenticated", HttpStatus.UNAUTHORIZED);
@@ -36,7 +36,7 @@ public class CourseController {
         }).orElse(new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND));
     }
 
-    @GetMapping("/all")
+    @GetMapping
     public ResponseEntity<List<Course>> getAllCourses() {
         List<Course> courses = courseService.getAllCourses();
         return new ResponseEntity<>(courses, HttpStatus.OK);
@@ -52,9 +52,19 @@ public class CourseController {
         }
     }
 
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
         courseService.deleteCourse(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @PutMapping
+    public ResponseEntity<Course> updateCourse(@RequestBody Course course) {
+        Course updatedCourse = courseService.updateCourse(course);
+        if (updatedCourse != null) {
+            return new ResponseEntity<>(updatedCourse, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 }
