@@ -19,7 +19,6 @@ public class EnrollmentController {
 
     @PostMapping("/enroll")
     public ResponseEntity<Enrollment> createEnrollment(@RequestParam String joinCode, @RequestAttribute("userId") Long userId) {
-        System.out.println("User ID: " + userId);
         if (joinCode == null) {
             throw new InvalidInputException("Join Code is required");
         }

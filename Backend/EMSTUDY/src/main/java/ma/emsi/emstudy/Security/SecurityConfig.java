@@ -33,15 +33,16 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
                 .authorizeHttpRequests(registry -> registry
-                        .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
-
-                        .requestMatchers("/course/**").hasAuthority("Teacher")
-                        .requestMatchers("/quizzes/**").hasAuthority("Teacher")
-                        .requestMatchers("/materials/**").hasAuthority("Teacher")
-                        .requestMatchers("/questions/**").hasAuthority("Teacher")
-                        .requestMatchers("/answers/**").hasAuthority("Teacher")
-
-                        .requestMatchers("/enrollments/**").hasAuthority("Student")
+                                .requestMatchers("/**").permitAll()
+//                        .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
+//
+//                        .requestMatchers("/courses/**").hasAuthority("Teacher")
+//                        .requestMatchers("/quizzes/**").hasAuthority("Teacher")
+//                        .requestMatchers("/materials/**").hasAuthority("Teacher")
+//                        .requestMatchers("/questions/**").hasAuthority("Teacher")
+//                        .requestMatchers("/answers/**").hasAuthority("Teacher")
+//
+//                        .requestMatchers("/enrollments/**").hasAuthority("Student")
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)

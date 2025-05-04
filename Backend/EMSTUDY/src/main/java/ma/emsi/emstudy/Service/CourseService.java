@@ -45,4 +45,8 @@ public class CourseService {
         }
         return null;
     }
+
+    public boolean isTeacherOfCourse(Long teacherId, Long courseId) {
+        return courseRepo.existsByTeacherUserIdAndCourseId(teacherId, courseId);
+    }
 }

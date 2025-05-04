@@ -18,7 +18,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @SuppressWarnings("unchecked")
-public class CourseItemService<T extends CourseItem> {
+public abstract class CourseItemService<T extends CourseItem> {
     protected final CourseItemRepo courseItemRepo;
     private final CourseRepo courseRepo;
 

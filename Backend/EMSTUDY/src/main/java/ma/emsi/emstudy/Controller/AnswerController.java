@@ -24,11 +24,6 @@ public class AnswerController {
             @PathVariable Long questionId,
             @Valid @RequestBody Answer answer) {
         Answer createdAnswer = answerService.createAnswer(answer, questionId);
-//        URI location = ServletUriComponentsBuilder
-//                .fromCurrentRequest()
-//                .path("/{id}")
-//                .buildAndExpand(createdAnswer.getAnswerId())
-//                .toUri();
         return new ResponseEntity<>(createdAnswer, HttpStatus.CREATED);
     }
 

@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.web.WebProperties;
 @Entity
 @Data
 @Table(name = "course_materials")
+@DiscriminatorValue("CM")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

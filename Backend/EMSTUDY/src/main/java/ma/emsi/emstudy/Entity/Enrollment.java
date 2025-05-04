@@ -33,5 +33,4 @@ public class Enrollment {
     @JoinColumn(name = "course_id")
     @JsonBackReference(value = "course_enrollments")
     private Course course;
-
 }

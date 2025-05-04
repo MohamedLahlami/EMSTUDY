@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface CourseRepo extends JpaRepository<Course, Long> {
     Optional<Course> findByJoinCode(String joinCode);
+    Boolean existsByTeacherUserIdAndCourseId(Long teacherId, Long courseId);
 }
