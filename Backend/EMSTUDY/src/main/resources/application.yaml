@@ -1,0 +1,32 @@
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+jwt:
+    secret: 5f4d3c2b1a9e8d7f6c5b4a3e2d1c0f9a7e6d5c4b3a2f1c0e9d8f7c6b5a4e3d2
+
+spring:
+  datasource:
+    url: ${BD_URL:jdbc:mysql://localhost:3306/emstudy}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 15MB
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+file:
+  upload-dir: uploads

@@ -1,0 +1,85 @@
+package ma.emsi.emstudy.Controller;
+
+import lombok.RequiredArgsConstructor;
+import ma.emsi.emstudy.Entity.Course;
+import ma.emsi.emstudy.Entity.Teacher;
+import ma.emsi.emstudy.Exception.ForbiddenAccessException;
+import ma.emsi.emstudy.Service.CourseService;
+import ma.emsi.emstudy.Service.TeacherService;
+import ma.emsi.emstudy.Service.UserService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@RestController
+@RequestMapping("/courses")
+@RequiredArgsConstructor
+public class CourseController {
+
+    private final CourseService courseService;
+    private final UserService userService;
+    private final TeacherService teacherService;
+
+    @PostMapping
+    public ResponseEntity<?> addCourse(@RequestBody Course course, @RequestAttribute("userId") Long userId) {
+        if (userId == null) {
+            return new ResponseEntity<>("User not authenticated", HttpStatus.UNAUTHORIZED);
+        }
+        return userService.findById(userId).map(user -> {
+            if (user.getRole().equals("Teacher")) {
+                Teacher teacher = (Teacher) user;
+                course.setTeacher(teacher);
+                return new ResponseEntity<>(courseService.addCourse(course), HttpStatus.CREATED);
+            } else {
+                return new ResponseEntity<>("Only teachers can create courses", HttpStatus.FORBIDDEN);
+            }
+        }).orElse(new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Course>> getAllCourses(@RequestAttribute("userId") Long userId) {
+        if (teacherService.getTeacher(userId) == null) {
+            throw new ForbiddenAccessException("You are not authorized to view this page");
+        }
+        List<Course> courses = courseService.getAllCourses();
+        return new ResponseEntity<>(courses, HttpStatus.OK);
+    }
+
+    @GetMapping("/{courseId}")
+    public ResponseEntity<Course> getCourseById(@PathVariable Long courseId, @RequestAttribute("userId") Long userId) {
+        if (!courseService.isTeacherOfCourse(userId, courseId)) {
+            throw new ForbiddenAccessException("You are not authorized to view this course");
+        }
+        Course course = courseService.getCourseById(courseId);
+        if (course != null) {
+            return new ResponseEntity<>(course, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @DeleteMapping("/{courseId}")
+    public ResponseEntity<Void> deleteCourse(@PathVariable Long courseId, @RequestAttribute("userId") Long userId) {
+        if (!courseService.isTeacherOfCourse(userId, courseId)) {
+            throw new ForbiddenAccessException("You are not authorized to delete this course");
+        }
+        courseService.deleteCourse(courseId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @PutMapping
+    public ResponseEntity<Course> updateCourse(@RequestBody Course course, @RequestAttribute("userId") Long userId) {
+        if (courseService.isTeacherOfCourse(userId, course.getCourseId())) {
+            throw new ForbiddenAccessException("You are not authorized to update this course");
+        }
+        Course updatedCourse = courseService.updateCourse(course);
+        if (updatedCourse != null) {
+            return new ResponseEntity<>(updatedCourse, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+}
