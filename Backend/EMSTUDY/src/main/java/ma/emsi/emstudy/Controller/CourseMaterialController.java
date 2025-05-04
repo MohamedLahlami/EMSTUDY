@@ -3,6 +3,7 @@ package ma.emsi.emstudy.Controller;
 import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.CourseMaterial;
 import ma.emsi.emstudy.Entity.CourseMaterialType;
+import ma.emsi.emstudy.Service.CourseItemService;
 import ma.emsi.emstudy.Service.CourseMaterialService;
 import ma.emsi.emstudy.Service.CourseService;
 import ma.emsi.emstudy.Service.FileStorageService;
@@ -18,16 +19,12 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/materials")
-public class CourseMaterialController extends CourseItemController<CourseMaterial> {
+@RequiredArgsConstructor
+public class CourseMaterialController {
+
     private final CourseService courseService;
     private final FileStorageService fileStorageService;
-    private final CourseMaterialService courseMaterialService = (CourseMaterialService)service;
-
-    public CourseMaterialController(CourseMaterialService service, CourseService courseService,  FileStorageService fileStorageService) {
-        super(service);
-        this.courseService = courseService;
-        this.fileStorageService = fileStorageService;
-    }
+    private final CourseMaterialService courseMaterialService;
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
@@ -53,27 +50,27 @@ public class CourseMaterialController extends CourseItemController<CourseMateria
         return ResponseEntity.ok(courseMaterialService.addCourseItem(material, courseId));
     }
 
-    @Override
     @GetMapping("/courses/{courseId}")
     public ResponseEntity<List<CourseMaterial>> getItemsByCourse(@PathVariable Long courseId) {
-        return super.getItemsByCourse(courseId);
+        return getItemsByCourse(courseId);
     }
 
-    @Override
     @GetMapping("/{itemId}")
     public ResponseEntity<CourseMaterial> getItem(@PathVariable Long itemId) {
         return super.getItem(itemId);
     }
 
-    @Override
     @PutMapping("/{itemId}")
     public ResponseEntity<CourseMaterial> updateItem(@PathVariable Long itemId, @RequestBody CourseMaterial item) {
         return super.updateItem(itemId, item);
     }
 
-    @Override
     @DeleteMapping("/{itemId}")
     public ResponseEntity<Void> deleteItem(@PathVariable Long itemId) {
-        return super.deleteItem(itemId);
+        if (courseMaterialService.getCourseItemById(itemId).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        courseMaterialService.deleteCourseItem(itemId);
+        return ResponseEntity.noContent().build();
     }
 }

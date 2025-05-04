@@ -1,54 +1,76 @@
 package ma.emsi.emstudy.Controller;
 
+import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.Quiz;
+import ma.emsi.emstudy.Entity.Question;
+import ma.emsi.emstudy.Service.CourseItemService;
 import ma.emsi.emstudy.Service.QuizService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
 @RequestMapping("/quizzes")
-public class QuizController extends CourseItemController<Quiz> {
+@RequiredArgsConstructor
+public class QuizController {
 
-    public QuizController(QuizService service) {
-        super(service);
+    private final CourseItemService<Quiz> courseItemService;
+    private final QuizService quizService;
+
+
+    @PostMapping
+    public ResponseEntity<Quiz> createQuiz(
+            @Valid @RequestBody Quiz quiz,
+            @RequestParam Long courseId,
+            @RequestAttribute("userId") Long userId
+    ) {
+        return ResponseEntity.ok(quizService.createQuiz(quiz, courseId, userId));
     }
 
-    @Override
-    @PostMapping("/courses/{courseId}")
-    public ResponseEntity<Quiz> createItem(@PathVariable Long courseId, @RequestBody Quiz quiz) {
-        return super.createItem(courseId, quiz);
+    @PostMapping("/{quizId}/questions")
+    public ResponseEntity<Quiz> addQuestion(
+            @PathVariable Long quizId,
+            @Valid @RequestBody Question question,
+            @RequestAttribute("userId") Long userId
+    ) {
+        return ResponseEntity.ok(quizService.addQuestion(quizId, question, userId));
     }
 
-    @Override
-    @GetMapping("/courses/{courseId}")
-    public ResponseEntity<List<Quiz>> getItemsByCourse(@PathVariable Long courseId) {
-        return super.getItemsByCourse(courseId);
+    @DeleteMapping("/{quizId}/questions/{questionId}")
+    public ResponseEntity<Void> deleteQuestion(
+            @PathVariable Long quizId,
+            @PathVariable Long questionId,
+            @RequestAttribute("userId") Long userId
+    ) {
+        quizService.deleteQuestion(quizId, questionId, userId);
+        return ResponseEntity.noContent().build();
     }
 
-    @Override
-    @GetMapping("/{itemId}")
-    public ResponseEntity<Quiz> getItem(@PathVariable Long itemId) {
-        return super.getItem(itemId);
+    @PostMapping("/{quizId}/start")
+    public ResponseEntity<Quiz> startQuiz(
+            @PathVariable Long quizId,
+            @RequestAttribute("userId") Long userId
+    ) {
+        return ResponseEntity.ok(quizService.startQuiz(quizId, userId));
     }
 
-    @Override
-    @PutMapping("/{itemId}")
-    public ResponseEntity<Quiz> updateItem(@PathVariable Long itemId, @RequestBody Quiz quiz) {
-        return super.updateItem(itemId, quiz);
+    @PostMapping("/{quizId}/submit")
+    public ResponseEntity<Integer> submitQuiz(
+            @PathVariable Long quizId,
+            @RequestBody List<Long> answers,
+            @RequestAttribute("userId") Long userId
+    ) {
+        return ResponseEntity.ok(quizService.submitQuiz(quizId, answers, userId));
     }
 
-    @Override
     @DeleteMapping("/{itemId}")
     public ResponseEntity<Void> deleteItem(@PathVariable Long itemId) {
-        return super.deleteItem(itemId);
-    }
-
-    // Quiz-specific endpoints can be added here
-    @GetMapping("/{quizId}/start")
-    public ResponseEntity<Quiz> startQuiz(@PathVariable Long quizId) {
-        Quiz quiz = service.getCourseItemById(quizId);
-        return ResponseEntity.ok(quiz);
+        if (courseItemService.getCourseItemById(itemId).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        courseItemService.deleteCourseItem(itemId);
+        return ResponseEntity.noContent().build();
     }
 }

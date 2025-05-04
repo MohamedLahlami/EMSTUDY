@@ -19,12 +19,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException,IOException {
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
         String token = extractToken(request);
-        try {
-            if (token != null) {
+        if (token != null) {
+            try {
                 UserDetails userDetails = authenticationService.validateToken(token);
-                UsernamePasswordAuthenticationToken authentication =  new UsernamePasswordAuthenticationToken(
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
                         userDetails.getAuthorities()
@@ -34,12 +35,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (userDetails instanceof AppUserDetails) {
                     request.setAttribute("userId", ((AppUserDetails) userDetails).getId());
                 }
+
+            } catch (Exception e) {
+                throw new ServletException("Invalid JWT token", e);
             }
-        } catch (Exception e) {
-            System.out.println("FilterChain error: " + e.getMessage());
         }
+
         filterChain.doFilter(request, response);
     }
+
 
     private String extractToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");

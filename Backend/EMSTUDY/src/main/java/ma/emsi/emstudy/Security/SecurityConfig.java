@@ -1,5 +1,6 @@
 package ma.emsi.emstudy.Security;
 
+import jakarta.servlet.http.HttpServletResponse;
 import ma.emsi.emstudy.Repository.UserRepo;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,17 +33,25 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\": \"Unauthorized: " + authException.getMessage() + "\"}");
+                        })
+                )
+
                 .authorizeHttpRequests(registry -> registry
-                                .requestMatchers("/**").permitAll()
-//                        .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
-//
-//                        .requestMatchers("/courses/**").hasAuthority("Teacher")
-//                        .requestMatchers("/quizzes/**").hasAuthority("Teacher")
-//                        .requestMatchers("/materials/**").hasAuthority("Teacher")
-//                        .requestMatchers("/questions/**").hasAuthority("Teacher")
-//                        .requestMatchers("/answers/**").hasAuthority("Teacher")
-//
-//                        .requestMatchers("/enrollments/**").hasAuthority("Student")
+
+                        .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
+
+                        .requestMatchers("/courses/**").hasAuthority("Teacher")
+                        .requestMatchers("/quizzes/**").hasAuthority("Teacher")
+                        .requestMatchers("/materials/**").hasAuthority("Teacher")
+                        .requestMatchers("/questions/**").hasAuthority("Teacher")
+                        .requestMatchers("/answers/**").hasAuthority("Teacher")
+
+                        .requestMatchers("/enrollments/**").hasAuthority("Student")
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)

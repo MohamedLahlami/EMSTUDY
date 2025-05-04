@@ -2,39 +2,37 @@ package ma.emsi.emstudy.Controller;
 
 import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.CourseItem;
+import ma.emsi.emstudy.Exception.ResourceNotFoundException;
 import ma.emsi.emstudy.Service.CourseItemService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@RestController
+@RequestMapping("/items")
 @RequiredArgsConstructor
-public class CourseItemController<T extends CourseItem> {
+public class CourseItemController {
 
-    protected final CourseItemService<T> service;
+    private final CourseItemService<CourseItem> courseItemService;
 
-    protected ResponseEntity<T> createItem(Long courseId, T item) {
-        return ResponseEntity.ok(service.addCourseItem(item, courseId));
+    @GetMapping("/course/{courseId}")
+    public ResponseEntity<List<CourseItem>> getItemsByCourse(@PathVariable Long courseId) {
+        return ResponseEntity.ok(courseItemService.getCoursesItemsByCourseId(courseId));
     }
 
-    @GetMapping("/courses/{courseId}")
-    protected ResponseEntity<List<T>> getItemsByCourse(@PathVariable Long courseId) {
-        return ResponseEntity.ok(service.getCourseItemsByCourseId(courseId));
+    @GetMapping("/{itemId}")
+    public ResponseEntity<CourseItem> getItem(@PathVariable Long itemId) {
+        CourseItem courseItem = courseItemService.getCourseItemById(itemId).orElseThrow(() -> new ResourceNotFoundException("CourseItem not found with id: " + itemId));
+        return ResponseEntity.ok(courseItem);
     }
 
-    protected ResponseEntity<T> getItem(Long itemId) {
-        T item = service.getCourseItemById(itemId);
-        return item != null ? ResponseEntity.ok(item) : ResponseEntity.notFound().build();
-    }
-
-    protected ResponseEntity<T> updateItem(Long itemId, T item) {
-        T updated = service.updateCourseItem(itemId, item);
-        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
-    }
-
-    protected ResponseEntity<Void> deleteItem(Long itemId) {
-        service.deleteCourseItem(itemId);
+    @DeleteMapping("/{itemId}")
+    public ResponseEntity<Void> deleteItem(@PathVariable Long itemId) {
+        if (courseItemService.getCourseItemById(itemId).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        courseItemService.deleteCourseItem(itemId);
         return ResponseEntity.noContent().build();
     }
 }
