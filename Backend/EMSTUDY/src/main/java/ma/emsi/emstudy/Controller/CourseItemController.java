@@ -18,20 +18,17 @@ public class CourseItemController {
 
     @GetMapping("/course/{courseId}")
     public ResponseEntity<List<CourseItem>> getItemsByCourse(@PathVariable Long courseId) {
-        return ResponseEntity.ok(courseItemService.getCoursesItemsByCourseId(courseId));
+        return ResponseEntity.ok(courseItemService.getCourseItemsByCourseId(courseId));
     }
 
     @GetMapping("/{itemId}")
     public ResponseEntity<CourseItem> getItem(@PathVariable Long itemId) {
-        CourseItem courseItem = courseItemService.getCourseItemById(itemId).orElseThrow(() -> new ResourceNotFoundException("CourseItem not found with id: " + itemId));
+        CourseItem courseItem = courseItemService.getCourseItemById(itemId);
         return ResponseEntity.ok(courseItem);
     }
 
     @DeleteMapping("/{itemId}")
     public ResponseEntity<Void> deleteItem(@PathVariable Long itemId) {
-        if (courseItemService.getCourseItemById(itemId).isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
         courseItemService.deleteCourseItem(itemId);
         return ResponseEntity.noContent().build();
     }

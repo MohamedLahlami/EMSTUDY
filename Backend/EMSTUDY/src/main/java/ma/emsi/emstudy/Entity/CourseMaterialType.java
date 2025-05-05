@@ -1,17 +1,21 @@
 package ma.emsi.emstudy.Entity;
 
 public enum CourseMaterialType {
-    TEXT,
     PDF,
-    LINK,
-    VIDEO;
-    public static CourseMaterialType from(String value) {
-        String format = value.contains("/") ? value.substring(value.lastIndexOf("/") + 1) : value;
-        for (CourseMaterialType t : values()) {
-            if (t.name().equalsIgnoreCase(format)) {
-                return t;
-            }
-        }
-        throw new IllegalArgumentException("Invalid file type: " + value);
+    VIDEO,
+    IMAGE,
+    DOCUMENT,
+    OTHER;
+
+    public static CourseMaterialType from(String contentType) {
+        if (contentType == null) return OTHER;
+        
+        return switch (contentType.toLowerCase()) {
+            case "application/pdf" -> PDF;
+            case "video/mp4", "video/mpeg", "video/quicktime" -> VIDEO;
+            case "image/jpeg", "image/png", "image/gif" -> IMAGE;
+            case "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> DOCUMENT;
+            default -> OTHER;
+        };
     }
 }

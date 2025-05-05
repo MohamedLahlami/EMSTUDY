@@ -37,13 +37,13 @@ public class CourseItemService<T extends CourseItem> {
         return (List<T>) courseItemRepo.findAll();
     }
 
-    public Optional<T> getCourseItemById(Long id) {
+    public T getCourseItemById(Long id) {
         CourseItem courseItem = courseItemRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("CourseItem not found with id: " + id));
         return (T) courseItem;
     }
 
-    public List<T> getCoursesItemsByCourseId(Long courseId) {
-        return (List<T>) courseItemRepo.findByCourse_CourseId(courseId);
+    public List<T> getCourseItemsByCourseId(Long courseId) {
+        return (List<T>) courseItemRepo.findByCourseCourseId(courseId);
     }
 
     public void deleteCourseItem(Long id) {

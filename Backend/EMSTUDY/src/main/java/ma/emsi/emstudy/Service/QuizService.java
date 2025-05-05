@@ -19,9 +19,14 @@ public class QuizService extends CourseItemService<Quiz>{
         this.quizRepo = quizRepo;
     }
 
-    public Quiz createQuiz(Quiz quiz, Long courseId) {
-        return addCourseItem(quiz, courseId);
+    public Quiz updateQuiz(Long quizId, Quiz updatedQuiz) {
+        Quiz existingQuiz = quizRepo.findById(quizId)
+                .orElseThrow(() -> new ResourceNotFoundException("Quiz not found with id: " + quizId));
+        existingQuiz.setQuestions(updatedQuiz.getQuestions());
+        existingQuiz.setShowCorrectAnswers(updatedQuiz.isShowCorrectAnswers());
+        existingQuiz.setDurationInMinutes(updatedQuiz.getDurationInMinutes());
+
+        existingQuiz.setTitle(updatedQuiz.getTitle());
+        return quizRepo.save(existingQuiz);
     }
-
-
 }

@@ -50,7 +50,9 @@ public class SecurityConfig {
                         .requestMatchers("/materials/**").hasAuthority("Teacher")
                         .requestMatchers("/questions/**").hasAuthority("Teacher")
                         .requestMatchers("/answers/**").hasAuthority("Teacher")
+                        .requestMatchers("/items/**").hasAuthority("Teacher")
 
+                        .requestMatchers("/submissions/**").hasAuthority("Student")
                         .requestMatchers("/enrollments/**").hasAuthority("Student")
                         .anyRequest().authenticated()
                 )

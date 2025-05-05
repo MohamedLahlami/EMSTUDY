@@ -20,7 +20,7 @@ public class QuestionService {
     private final QuizRepo quizRepo;
 
     public Question createQuestion(@PathVariable Long quizID, Question question) {
-        Quiz quiz = quizRepo.findById(Math.toIntExact(quizID))
+        Quiz quiz = quizRepo.findById(quizID)
                 .orElseThrow(() -> new ResourceNotFoundException("Quiz not found with id: " + quizID));
         question.setQuiz(quiz);
         return questionRepo.save(question);

@@ -30,7 +30,7 @@ public class CompletedCourseItem {
 
     @ManyToOne
     @JoinColumn(name = "course_item_id")
-    @JsonBackReference
+    //@JsonBackReference
     private CourseItem courseItem;
 
     private LocalDate completedAt; // optional

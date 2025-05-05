@@ -3,12 +3,18 @@ package ma.emsi.emstudy.Controller;
 import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.Quiz;
 import ma.emsi.emstudy.Entity.Question;
+import ma.emsi.emstudy.Exception.ForbiddenAccessException;
 import ma.emsi.emstudy.Service.CourseItemService;
+import ma.emsi.emstudy.Service.CourseService;
 import ma.emsi.emstudy.Service.QuizService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -16,6 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class QuizController {
 
+    private final CourseService courseService;
     private final CourseItemService<Quiz> courseItemService;
     private final QuizService quizService;
 
@@ -26,50 +33,43 @@ public class QuizController {
             @RequestParam Long courseId,
             @RequestAttribute("userId") Long userId
     ) {
-        return ResponseEntity.ok(quizService.createQuiz(quiz, courseId, userId));
+        if(!courseService.isTeacherOfCourse(userId, courseId)) {
+            throw new ForbiddenAccessException("You are not allowed to create a quiz for this course.");
+        }
+        quiz.setAddDate(LocalDateTime.now());
+        return ResponseEntity.ok(courseItemService.addCourseItem(quiz, courseId));
     }
 
-    @PostMapping("/{quizId}/questions")
-    public ResponseEntity<Quiz> addQuestion(
-            @PathVariable Long quizId,
-            @Valid @RequestBody Question question,
-            @RequestAttribute("userId") Long userId
-    ) {
-        return ResponseEntity.ok(quizService.addQuestion(quizId, question, userId));
-    }
+    //TODO: maybe I dont need this, make full update
+//    @PostMapping("/{quizId}/questions")
+//    public ResponseEntity<Quiz> addQuestion(
+//            @PathVariable Long quizId,
+//            @Valid @RequestBody Question question,
+//            @RequestAttribute("userId") Long userId
+//    ) {
+//        return ResponseEntity.ok(quizService.addQuestion(quizId, question, userId));
+//    }
 
-    @DeleteMapping("/{quizId}/questions/{questionId}")
-    public ResponseEntity<Void> deleteQuestion(
-            @PathVariable Long quizId,
-            @PathVariable Long questionId,
-            @RequestAttribute("userId") Long userId
-    ) {
-        quizService.deleteQuestion(quizId, questionId, userId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/{quizId}/start")
-    public ResponseEntity<Quiz> startQuiz(
-            @PathVariable Long quizId,
-            @RequestAttribute("userId") Long userId
-    ) {
-        return ResponseEntity.ok(quizService.startQuiz(quizId, userId));
-    }
-
-    @PostMapping("/{quizId}/submit")
-    public ResponseEntity<Integer> submitQuiz(
-            @PathVariable Long quizId,
-            @RequestBody List<Long> answers,
-            @RequestAttribute("userId") Long userId
-    ) {
-        return ResponseEntity.ok(quizService.submitQuiz(quizId, answers, userId));
-    }
+    //TODO: implement quiz taking logic
+//    @PostMapping("/{quizId}/start")
+//    public ResponseEntity<Quiz> startQuiz(
+//            @PathVariable Long quizId,
+//            @RequestAttribute("userId") Long userId
+//    ) {
+//        return ResponseEntity.ok(quizService.startQuiz(quizId, userId));
+//    }
+//
+//    @PostMapping("/{quizId}/submit")
+//    public ResponseEntity<Integer> submitQuiz(
+//            @PathVariable Long quizId,
+//            @RequestBody List<Long> answers,
+//            @RequestAttribute("userId") Long userId
+//    ) {
+//        return ResponseEntity.ok(quizService.submitQuiz(quizId, answers, userId));
+//    }
 
     @DeleteMapping("/{itemId}")
     public ResponseEntity<Void> deleteItem(@PathVariable Long itemId) {
-        if (courseItemService.getCourseItemById(itemId).isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
         courseItemService.deleteCourseItem(itemId);
         return ResponseEntity.noContent().build();
     }

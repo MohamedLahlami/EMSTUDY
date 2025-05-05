@@ -3,13 +3,17 @@ package ma.emsi.emstudy.Controller;
 import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.CourseMaterial;
 import ma.emsi.emstudy.Entity.CourseMaterialType;
+import ma.emsi.emstudy.Exception.InvalidInputException;
 import ma.emsi.emstudy.Service.CourseItemService;
 import ma.emsi.emstudy.Service.CourseMaterialService;
 import ma.emsi.emstudy.Service.CourseService;
 import ma.emsi.emstudy.Service.FileStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,7 +40,6 @@ public class CourseMaterialController {
             @RequestParam("courseId") Long courseId,
             @RequestAttribute("userId") Long userId
     ) throws IOException {
-        System.out.println("Creating material with title: " + title + " for courseId: " + courseId);
         if (!courseService.isTeacherOfCourse(userId, courseId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -45,32 +48,50 @@ public class CourseMaterialController {
 
         CourseMaterial material = new CourseMaterial();
         material.setTitle(title);
-        material.setCourseMaterialType(CourseMaterialType.from(file.getContentType()));
-        material.setUrl(uploadDir + fileName);
-        return ResponseEntity.ok(courseMaterialService.addCourseItem(material, courseId));
+        
+        CourseMaterialType materialType = CourseMaterialType.from(file.getContentType());
+        System.out.println("Resolved material type: " + materialType); // Debug line
+        
+        material.setCourseMaterialType(materialType);
+        material.setUrl(uploadDir + "/" + fileName);
+        
+        try {
+            return ResponseEntity.ok(courseMaterialService.addCourseItem(material, courseId));
+        } catch (Exception e) {
+            System.err.println("Error saving material: " + e.getMessage());
+            throw new InvalidInputException("Failed to save material: " + e.getMessage());
+        }
     }
 
-    @GetMapping("/courses/{courseId}")
+    @GetMapping("/{materialId}/download")
+    public ResponseEntity<UrlResource> downloadMaterial(@PathVariable Long materialId) {
+        UrlResource resource = fileStorageService.downloadMaterial(materialId);
+        String contentType = fileStorageService.getMaterialContentType(materialId);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
+    }
+
+
+    @GetMapping("/course/{courseId}")
     public ResponseEntity<List<CourseMaterial>> getItemsByCourse(@PathVariable Long courseId) {
-        return getItemsByCourse(courseId);
-    }
-
-    @GetMapping("/{itemId}")
-    public ResponseEntity<CourseMaterial> getItem(@PathVariable Long itemId) {
-        return super.getItem(itemId);
+        return ResponseEntity.ok(courseMaterialService.getCourseItemsByCourseId(courseId));
     }
 
     @PutMapping("/{itemId}")
-    public ResponseEntity<CourseMaterial> updateItem(@PathVariable Long itemId, @RequestBody CourseMaterial item) {
-        return super.updateItem(itemId, item);
+    public ResponseEntity<CourseMaterial> updateItem(@PathVariable Long itemId, @RequestBody CourseMaterial item, @RequestAttribute("userId") Long userId){
+        if (!courseService.isTeacherOfCourse(userId, item.getCourse().getCourseId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(courseMaterialService.updateCourseItem(itemId, item));
     }
 
     @DeleteMapping("/{itemId}")
     public ResponseEntity<Void> deleteItem(@PathVariable Long itemId) {
-        if (courseMaterialService.getCourseItemById(itemId).isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
         courseMaterialService.deleteCourseItem(itemId);
         return ResponseEntity.noContent().build();
     }
+
 }
