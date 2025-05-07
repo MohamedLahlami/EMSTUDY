@@ -3,6 +3,7 @@ package ma.emsi.emstudy.Service;
 import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.Answer;
 import ma.emsi.emstudy.Entity.Question;
+import ma.emsi.emstudy.Exception.ResourceNotFoundException;
 import ma.emsi.emstudy.Repository.AnswerRepo;
 import ma.emsi.emstudy.Repository.QuestionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,16 +37,11 @@ public class AnswerService {
         return answerRepo.findByQuestion_QuestionId(questionId);
     }
 
-    public Answer updateAnswer(Long id, Answer answerDetails) {
-        Optional<Answer> answer = answerRepo.findById(id);
-        if (answer.isPresent()) {
-            Answer existingAnswer = answer.get();
-            existingAnswer.setAnswerText(answerDetails.getAnswerText());
-            existingAnswer.setCorrect(answerDetails.isCorrect());
-            existingAnswer.setQuestion(answerDetails.getQuestion());
-            return answerRepo.save(existingAnswer);
-        }
-        return null;
+    public Answer updateAnswer(Long answerId, Answer answerDetails) {
+        Answer answer = answerRepo.findById(answerId).orElseThrow(() -> new ResourceNotFoundException("Answer not found with id: " + answerId));
+        answer.setAnswerText(answerDetails.getAnswerText());
+        answer.setCorrect(answerDetails.isCorrect());
+        return answerRepo.save(answer);
     }
 
     public void deleteAnswer(Long id) {

@@ -14,38 +14,31 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/questions")
 public class QuestionController {
 
     private final QuestionService questionService;
 
-    @PostMapping("/quizzes/{quizId}/questions")
-    public ResponseEntity<Question> createQuestion(
-            @PathVariable Long quizId,
-            @Valid @RequestBody Question question) {
-        Question createdQuestion = questionService.createQuestion(quizId, question);
-        return new ResponseEntity<>(createdQuestion, HttpStatus.CREATED);
-    }
-
-    @GetMapping("/questions")
+    @GetMapping("/")
     public ResponseEntity<List<Question>> getAllQuestions() {
         List<Question> questions = questionService.getAllQuestions();
         return ResponseEntity.ok(questions);
     }
 
-    @GetMapping("//questions/{questionId}")
+    @GetMapping("/{questionId}")
     public ResponseEntity<Question> getQuestionById(@PathVariable Long questionId) {
         return questionService.getQuestionById(questionId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/quizzes/{quizId}/questions")
+    @GetMapping("/quiz/{quizId}")
     public ResponseEntity<List<Question>> getQuestionsByQuizId(@PathVariable Long quizId) {
         List<Question> questions = questionService.getQuestionsByQuizId(quizId);
         return ResponseEntity.ok(questions);
     }
 
-    @PutMapping("//questions/{questionId}")
+    @PutMapping("/{questionId}")
     public ResponseEntity<Question> updateQuestion(
             @PathVariable Long questionId,
             @Valid @RequestBody Question questionDetails) {

@@ -35,11 +35,6 @@ public abstract class CourseItem {
     @Column(insertable = false, updatable = false)
     private String itemType;
 
-    //TODO: comment this baraka mn tkhrbi9
-//    @OneToMany(mappedBy = "courseItem", cascade = CascadeType.ALL)
-//    @JsonManagedReference
-//    private List<CompletedCourseItem> completedCourseItems = new ArrayList<>();
-
     @ManyToOne
     @JoinColumn(name = "course_id")
     @JsonBackReference(value = "course_courseItems")

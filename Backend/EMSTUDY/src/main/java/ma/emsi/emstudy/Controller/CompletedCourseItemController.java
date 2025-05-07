@@ -20,27 +20,17 @@ public class CompletedCourseItemController {
 
     @PostMapping("/")
     public ResponseEntity<?> markItemAsCompleted(
-            @RequestParam Long studentId,
-            @RequestParam Long courseItemId) {
-        CompletedCourseItem completed = null;
-        try {
-            completed = completedCourseItemService.markItemAsCompleted(studentId, courseItemId);
-        } catch (BadRequestException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+            @RequestParam Long itemId,
+            @RequestAttribute("userId") Long studentId) {
+        CompletedCourseItem completed = completedCourseItemService.markItemAsCompleted(studentId, itemId);
         return ResponseEntity.ok(completed);
     }
 
-    @GetMapping("/course/{courseId}/student/{studentId}")
+    @GetMapping("/course/{courseId}")
     public ResponseEntity<List<CompletedCourseItem>> getCompletedItemsByCourseAndStudent(
             @PathVariable Long courseId,
-            @PathVariable Long studentId) {
-        List<CompletedCourseItem> items = null;
-        try {
-            items = completedCourseItemService.getCompletedItemsByCourseAndStudent(courseId, studentId);
-        } catch (BadRequestException e) {
-            return ResponseEntity.badRequest().body(null);
-        }
+            @RequestAttribute("userId") Long studentId) {
+        List<CompletedCourseItem> items = completedCourseItemService.getCompletedItemsByCourseAndStudent(studentId, courseId);
         return ResponseEntity.ok(items);
     }
 

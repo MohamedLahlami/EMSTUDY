@@ -15,11 +15,12 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/answers")
 public class AnswerController {
 
     private final AnswerService answerService;
 
-    @PostMapping("/questions/{questionId}")
+    @PostMapping("/question/{questionId}")
     public ResponseEntity<Answer> createAnswer(
             @PathVariable Long questionId,
             @Valid @RequestBody Answer answer) {
@@ -27,7 +28,7 @@ public class AnswerController {
         return new ResponseEntity<>(createdAnswer, HttpStatus.CREATED);
     }
 
-    @GetMapping("/questions/{questionId}")
+    @GetMapping("/question/{questionId}")
     public ResponseEntity<List<Answer>> getAnswersByQuestion(@PathVariable Long questionId) {
         List<Answer> answers = answerService.getAnswersByQuestionId(questionId);
         return ResponseEntity.ok(answers);
@@ -43,11 +44,8 @@ public class AnswerController {
     @PutMapping("/{answerId}")
     public ResponseEntity<Answer> updateAnswer(
             @PathVariable Long answerId,
-            @Valid @RequestBody Answer answer) {
-        Answer updatedAnswer = answerService.updateAnswer(answerId, answer);
-        return updatedAnswer != null
-                ? ResponseEntity.ok(updatedAnswer)
-                : ResponseEntity.notFound().build();
+            @RequestBody Answer answer) {
+        return ResponseEntity.ok(answerService.updateAnswer(answerId, answer));
     }
 
     @DeleteMapping("/{answerId}")

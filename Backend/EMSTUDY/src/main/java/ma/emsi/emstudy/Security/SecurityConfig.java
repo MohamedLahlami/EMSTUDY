@@ -51,9 +51,14 @@ public class SecurityConfig {
                         .requestMatchers("/questions/**").hasAuthority("Teacher")
                         .requestMatchers("/answers/**").hasAuthority("Teacher")
                         .requestMatchers("/items/**").hasAuthority("Teacher")
+                        .requestMatchers("/submissions/**").hasAuthority("Teacher")
 
                         .requestMatchers("/submissions/**").hasAuthority("Student")
                         .requestMatchers("/enrollments/**").hasAuthority("Student")
+                        .requestMatchers("/completed-items/**").hasAuthority("Student")
+
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)

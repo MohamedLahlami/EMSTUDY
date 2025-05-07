@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -30,8 +31,7 @@ public class CompletedCourseItem {
 
     @ManyToOne
     @JoinColumn(name = "course_item_id")
-    //@JsonBackReference
     private CourseItem courseItem;
 
-    private LocalDate completedAt; // optional
+    private LocalDateTime completedAt;
 }

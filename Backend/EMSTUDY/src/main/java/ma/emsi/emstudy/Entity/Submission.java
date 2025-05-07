@@ -19,16 +19,18 @@ public class Submission {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long submissionId;
 
-    private LocalDateTime submissionDate;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private boolean submitted;
     private float score;
 
     @ManyToMany
     private List<Answer> answers = new ArrayList<>();
 
-//    @ManyToOne
-//    @JoinColumn(name = "quiz_id")
-//    @JsonBackReference
-//    private Quiz quiz;
+    @ManyToOne
+    @JoinColumn(name = "quiz_id")
+    @JsonBackReference
+    private Quiz quiz;
 
     @ManyToOne
     @JoinColumn(name = "student_id")

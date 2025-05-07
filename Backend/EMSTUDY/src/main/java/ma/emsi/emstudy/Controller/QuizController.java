@@ -29,7 +29,7 @@ public class QuizController {
 
     @PostMapping
     public ResponseEntity<Quiz> createQuiz(
-            @Valid @RequestBody Quiz quiz,
+            @RequestBody Quiz quiz,
             @RequestParam Long courseId,
             @RequestAttribute("userId") Long userId
     ) {
@@ -40,37 +40,12 @@ public class QuizController {
         return ResponseEntity.ok(courseItemService.addCourseItem(quiz, courseId));
     }
 
-    //TODO: maybe I dont need this, make full update
-//    @PostMapping("/{quizId}/questions")
-//    public ResponseEntity<Quiz> addQuestion(
-//            @PathVariable Long quizId,
-//            @Valid @RequestBody Question question,
-//            @RequestAttribute("userId") Long userId
-//    ) {
-//        return ResponseEntity.ok(quizService.addQuestion(quizId, question, userId));
-//    }
-
-    //TODO: implement quiz taking logic
-//    @PostMapping("/{quizId}/start")
-//    public ResponseEntity<Quiz> startQuiz(
-//            @PathVariable Long quizId,
-//            @RequestAttribute("userId") Long userId
-//    ) {
-//        return ResponseEntity.ok(quizService.startQuiz(quizId, userId));
-//    }
-//
-//    @PostMapping("/{quizId}/submit")
-//    public ResponseEntity<Integer> submitQuiz(
-//            @PathVariable Long quizId,
-//            @RequestBody List<Long> answers,
-//            @RequestAttribute("userId") Long userId
-//    ) {
-//        return ResponseEntity.ok(quizService.submitQuiz(quizId, answers, userId));
-//    }
-
-    @DeleteMapping("/{itemId}")
-    public ResponseEntity<Void> deleteItem(@PathVariable Long itemId) {
-        courseItemService.deleteCourseItem(itemId);
-        return ResponseEntity.noContent().build();
+    @PostMapping("/{quizId}/questions")
+    public ResponseEntity<Quiz> addQuestion(
+            @PathVariable Long quizId,
+            @Valid @RequestBody Question question,
+            @RequestAttribute("userId") Long userId
+    ) {
+        return ResponseEntity.ok(quizService.addQuestion(quizId, question));
     }
 }

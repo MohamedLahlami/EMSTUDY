@@ -20,7 +20,7 @@ public class Answer {
     private Long answerId;
 
     private String answerText;
-    private boolean isCorrect;
+    private boolean Correct;
 
     @ManyToOne
     @JoinColumn(name = "question_id")
