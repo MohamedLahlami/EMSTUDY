@@ -20,7 +20,7 @@ public class CourseMaterialService extends CourseItemService<CourseMaterial> {
     public CourseMaterial updateCourseMaterial(Long courseMaterialId, CourseMaterial updatedCourseMaterial) {
         CourseMaterial existingCourseMaterial = courseMaterialRepo.findById(courseMaterialId)
                 .orElseThrow(() -> new ResourceNotFoundException("CourseMaterial not found with id: " + courseMaterialId));
-        //courseItem firlds
+        //courseItem fields
         existingCourseMaterial.setTitle(updatedCourseMaterial.getTitle());
         //courseMaterial fields
         existingCourseMaterial.setUrl(updatedCourseMaterial.getUrl());

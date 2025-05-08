@@ -1,6 +1,7 @@
 package ma.emsi.emstudy.Controller;
 
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.Student;
 import ma.emsi.emstudy.Entity.Teacher;
@@ -25,6 +26,11 @@ public class AuthController {
     private final UserService userService;
     private final AuthenticationService authenticationService;
 
+
+    @Operation(
+            summary = "Logs the user in",
+            description = "Returns a JWT token if the login is successful"
+    )
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {
         UserDetails userdetails = authenticationService.authenticate(
@@ -40,6 +46,10 @@ public class AuthController {
         return ResponseEntity.ok(authResponse);
     }
 
+    @Operation(
+            summary = "Registers a new user",
+            description = "Creates a new user and returns the created user object, `role` field should be `Student` or `Teacher`"
+    )
     @PostMapping("/register")
     public ResponseEntity<?> addTeacher(@RequestBody UserDTO userDto) {
         if (userService.existsByEmail(userDto.getEmail())) {
