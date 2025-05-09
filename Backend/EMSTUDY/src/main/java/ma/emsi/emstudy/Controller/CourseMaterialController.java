@@ -1,14 +1,17 @@
 package ma.emsi.emstudy.Controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.CourseMaterial;
 import ma.emsi.emstudy.Entity.CourseMaterialType;
 import ma.emsi.emstudy.Exception.InvalidInputException;
-import ma.emsi.emstudy.Service.CourseItemService;
 import ma.emsi.emstudy.Service.CourseMaterialService;
 import ma.emsi.emstudy.Service.CourseService;
 import ma.emsi.emstudy.Service.FileStorageService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -17,13 +20,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.util.List;
 
 @RestController
 @RequestMapping("/materials")
 @RequiredArgsConstructor
+@Tag(name = "Course Materials", description = "APIs for managing course materials and file uploads")
+@SecurityRequirement(name = "bearerAuth")
 public class CourseMaterialController {
 
     private final CourseService courseService;
@@ -33,11 +37,20 @@ public class CourseMaterialController {
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
 
+    @Operation(
+        summary = "Create new course material",
+        description = "Upload a file and create a new course material",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Material created successfully"),
+            @ApiResponse(responseCode = "403", description = "User is not the course teacher"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or file upload failed")
+        }
+    )
     @PostMapping
     public ResponseEntity<CourseMaterial> createMaterial(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("title") String title,
-            @RequestParam("courseId") Long courseId,
+            @Parameter(description = "File to upload") @RequestParam("file") MultipartFile file,
+            @Parameter(description = "Title of the material") @RequestParam("title") String title,
+            @Parameter(description = "ID of the course") @RequestParam("courseId") Long courseId,
             @RequestAttribute("userId") Long userId
     ) throws IOException {
         if (!courseService.isTeacherOfCourse(userId, courseId)) {
@@ -48,13 +61,13 @@ public class CourseMaterialController {
 
         CourseMaterial material = new CourseMaterial();
         material.setTitle(title);
-        
+
         CourseMaterialType materialType = CourseMaterialType.from(file.getContentType());
         System.out.println("Resolved material type: " + materialType); // Debug line
-        
+
         material.setCourseMaterialType(materialType);
         material.setUrl(uploadDir + "/" + fileName);
-        
+
         try {
             return ResponseEntity.ok(courseMaterialService.addCourseItem(material, courseId));
         } catch (Exception e) {
@@ -63,8 +76,17 @@ public class CourseMaterialController {
         }
     }
 
+    @Operation(
+        summary = "Download course material",
+        description = "Download a specific course material file",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "File downloaded successfully"),
+            @ApiResponse(responseCode = "404", description = "Material not found")
+        }
+    )
     @GetMapping("/{materialId}/download")
-    public ResponseEntity<UrlResource> downloadMaterial(@PathVariable Long materialId) {
+    public ResponseEntity<UrlResource> downloadMaterial(
+            @Parameter(description = "ID of the material to download") @PathVariable Long materialId) {
         UrlResource resource = fileStorageService.downloadMaterial(materialId);
         String contentType = fileStorageService.getMaterialContentType(materialId);
 
@@ -74,22 +96,51 @@ public class CourseMaterialController {
                 .body(resource);
     }
 
-
+    @Operation(
+        summary = "Get materials by course",
+        description = "Retrieve all materials for a specific course",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "List of materials retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Course not found")
+        }
+    )
     @GetMapping("/course/{courseId}")
-    public ResponseEntity<List<CourseMaterial>> getItemsByCourse(@PathVariable Long courseId) {
+    public ResponseEntity<List<CourseMaterial>> getItemsByCourse(
+            @Parameter(description = "ID of the course") @PathVariable Long courseId) {
         return ResponseEntity.ok(courseMaterialService.getCourseItemsByCourseId(courseId));
     }
 
+    @Operation(
+        summary = "Update course material",
+        description = "Update an existing course material",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Material updated successfully"),
+            @ApiResponse(responseCode = "403", description = "User is not the course teacher"),
+            @ApiResponse(responseCode = "404", description = "Material not found")
+        }
+    )
     @PutMapping("/{itemId}")
-    public ResponseEntity<CourseMaterial> updateItem(@PathVariable Long itemId, @RequestBody CourseMaterial item, @RequestAttribute("userId") Long userId){
+    public ResponseEntity<CourseMaterial> updateItem(
+            @Parameter(description = "ID of the material to update") @PathVariable Long itemId,
+            @Parameter(description = "Updated material details") @RequestBody CourseMaterial item,
+            @RequestAttribute("userId") Long userId) {
         if (!courseService.isTeacherOfCourse(userId, item.getCourse().getCourseId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(courseMaterialService.updateCourseItem(itemId, item));
     }
 
+    @Operation(
+        summary = "Delete course material",
+        description = "Delete a specific course material",
+        responses = {
+            @ApiResponse(responseCode = "204", description = "Material deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Material not found")
+        }
+    )
     @DeleteMapping("/{itemId}")
-    public ResponseEntity<Void> deleteItem(@PathVariable Long itemId) {
+    public ResponseEntity<Void> deleteItem(
+            @Parameter(description = "ID of the material to delete") @PathVariable Long itemId) {
         courseMaterialService.deleteCourseItem(itemId);
         return ResponseEntity.noContent().build();
     }

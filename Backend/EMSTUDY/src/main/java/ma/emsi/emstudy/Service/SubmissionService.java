@@ -8,14 +8,11 @@ import ma.emsi.emstudy.Repository.EnrollmentRepo;
 import ma.emsi.emstudy.Repository.QuizRepo;
 import ma.emsi.emstudy.Repository.SubmissionRepo;
 import ma.emsi.emstudy.Repository.UserRepo;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -35,11 +32,8 @@ public class SubmissionService {
         return submissionRepo.findById(id);
     }
 
-    public Submission getSubmissionsByQuizAndStudent(Long quizId, Long studentId) {
-    return submissionRepo.findByStudentUserId(studentId).stream()
-            .filter(submission -> submission.getAnswers().stream()
-                    .anyMatch(answer -> answer.getQuestion().getQuiz().getItemId().equals(quizId)))
-            .findFirst().orElse(null);
+    public Submission getSubmissionByQuizAndStudent(Long quizId, Long studentId) {
+        return submissionRepo.findByStudentUserId(studentId).orElseThrow(() -> new ResourceNotFoundException("Submission not found."));
 }
 
     @Transactional
@@ -50,6 +44,10 @@ public class SubmissionService {
         Quiz quiz = quizRepo.findById(quizId) .orElseThrow(() -> new ResourceNotFoundException("Quiz not found."));
         if (enrollmentRepo.findByStudentUserIdAndCourse_CourseId(student.getUserId(), quiz.getCourse().getCourseId()).isEmpty()) {
             throw new IllegalArgumentException("Student is not enrolled in the course.");
+        }
+        if (submissionRepo.findByStudentUserId(student.getUserId()).stream()
+                .anyMatch(submission -> submission.getQuiz().getItemId().equals(quizId) && !submission.isSubmitted())) {
+            throw new IllegalArgumentException("Student has already started the quiz.");
         }
         Submission submission = new Submission();
         submission.setStudent(student);
