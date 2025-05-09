@@ -1,84 +1,114 @@
-export type UserRole = "teacher" | "student";
+// Types matching the OpenAPI contract
 
-export interface User {
-  id: string;
-  name: string;
+export interface AuthResponse {
+  token: string;
+  expiresIn: number;
+  role: string;
+}
+
+export interface UserDTO {
+  username: string;
   email: string;
-  password: string; // In a real app, this would be hashed
-  role: UserRole;
-  profilePicture?: string;
-  lastLogin?: string;
+  password: string;
+  role: string;
+  bio?: string;
+  studentGroup?: string;
+}
+
+export interface Teacher {
+  userId: number;
+  username: string;
+  password: string;
+  email: string;
+  role: string;
+  bio?: string;
+  courses?: Course[];
+}
+
+export interface Student {
+  userId: number;
+  username: string;
+  password: string;
+  email: string;
+  role: string;
+  status?: string;
+  studentGroup?: string;
+  enrollments?: Enrollment[];
+  completedCourseItems?: CompletedCourseItem[];
+  submissions?: Submission[];
 }
 
 export interface Course {
-  id: string;
+  courseId: number;
+  joinCode: string;
+  teacher: Teacher;
+  courseItems: (CourseMaterial | Quiz)[];
+  completedCourseItems?: CompletedCourseItem[];
+  enrollments?: Enrollment[];
   name: string;
-  code: string;
   description: string;
-  teacherId: string;
-  startDate: string;
-  endDate: string;
-  studentIds: string[];
-  coverImage?: string;
 }
 
-export interface Material {
-  id: string;
-  courseId: string;
+export interface CourseItem {
+  itemId: number;
   title: string;
-  description: string;
-  type: "pdf" | "video" | "link" | "text";
-  content: string; // URL for links, videos, or PDFs; text content for text
-  dateAdded: string;
-  availableFrom: string;
-  availableTo?: string;
+  addDate: string;
+  itemType: string;
+  course?: Course;
 }
 
-export type AssignmentType = "homework" | "quiz";
-export type QuestionType = "multiple_choice" | "true_false" | "multiple_select";
-
-export interface Assignment {
-  id: string;
-  courseId: string;
-  title: string;
+export interface CourseMaterial extends CourseItem {
+  courseMaterialType: "PDF" | "VIDEO" | "IMAGE" | "DOCUMENT" | "OTHER";
+  url: string;
   description: string;
-  type: AssignmentType;
-  totalPoints: number;
-  dueDate: string;
-  questions?: Question[];
+}
+
+export interface Quiz extends CourseItem {
+  durationInMinutes: number;
+  showCorrectAnswers: boolean;
+  questions: Question[];
+}
+
+export interface Enrollment {
+  enrollmentId: number;
+  enrollmentDate: string;
+  completionDate?: string;
+  student: Student;
+  course: Course;
+}
+
+export interface CompletedCourseItem {
+  completedCourseItemId: number;
+  student: Student;
+  course: Course;
+  courseItem: CourseMaterial | Quiz;
+  completedAt: string;
 }
 
 export interface Question {
-  id: string;
-  text: string;
-  type: QuestionType;
-  options?: string[];
-  correctAnswers?: string[]; // Indices of correct answers
+  questionId: number;
+  questionText: string;
   points: number;
-}
-
-export interface Submission {
-  id: string;
-  assignmentId: string;
-  studentId: string;
-  submissionDate: string;
-  status: "draft" | "submitted" | "late" | "graded";
+  questionType: "MULTIPLE_CHOICE" | "TRUE_FALSE" | "MULTI_SELECT";
+  quiz?: Quiz;
   answers?: Answer[];
-  files?: string[]; // URLs
-  comments?: string;
+  explanation?: string;
 }
 
 export interface Answer {
-  questionId: string;
-  selectedOptions?: string[]; // Indices of selected options
-  textResponse?: string;
+  answerId: number;
+  answerText: string;
+  question?: Question;
+  correct: boolean;
 }
 
-export interface Grade {
-  id: string;
-  submissionId: string;
+export interface Submission {
+  submissionId: number;
+  startTime: string;
+  endTime: string;
+  submitted: boolean;
   score: number;
-  feedback?: string;
-  gradedBy: string;
-  gradedDate: string;
+  answers: Answer[];
+  quiz: Quiz;
+  student: Student;
 }

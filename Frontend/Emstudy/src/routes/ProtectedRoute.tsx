@@ -1,14 +1,14 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import React from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 interface ProtectedRouteProps {
-  requiredRole?: 'teacher' | 'student';
+  requiredRole?: "Teacher" | "Student";
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRole }) => {
   const { currentUser, isLoading } = useAuth();
-  
+
   // Show loading indicator
   if (isLoading) {
     return (
@@ -17,17 +17,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRole }) => {
       </div>
     );
   }
-  
+
   // Check if user is authenticated
   if (!currentUser) {
     return <Navigate to="/login" />;
   }
-  
+
   // Check if user has required role
   if (requiredRole && currentUser.role !== requiredRole) {
     return <Navigate to="/dashboard" />;
   }
-  
+
   return <Outlet />;
 };
 

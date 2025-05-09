@@ -1,61 +1,56 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
-  Course, 
-  Material, 
-  Assignment, 
-  Submission, 
-  Grade, 
-  User 
-} from '../types';
-import { 
-  courses, 
-  materials, 
-  assignments, 
-  submissions, 
-  grades, 
-  users,
-  addCourse,
-  addMaterial,
-  addAssignment,
-  addSubmission,
-  addGrade,
-  getCoursesByTeacherId,
-  getCoursesByStudentId,
-  getAssignmentsByCourseId,
-  getMaterialsByCourseId,
-  getSubmissionsByAssignmentId,
-  getSubmissionsByStudentId,
-  getGradeBySubmissionId,
-  enrollStudentInCourse,
-  getStudentsByCourseId
-} from '../data/mockData';
-import { useAuth } from './AuthContext';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import * as courseApi from "../api/courseApi";
+import * as enrollmentApi from "../api/enrollmentApi";
+import * as courseItemApi from "../api/courseItemApi";
+import * as materialApi from "../api/materialApi";
+import * as quizApi from "../api/quizApi";
+import * as submissionApi from "../api/submissionApi";
+import * as completedItemApi from "../api/completedItemApi";
+import {
+  Course,
+  CourseMaterial,
+  Quiz,
+  Enrollment,
+  CompletedCourseItem,
+  Submission,
+  Question,
+  Answer,
+} from "../types";
+import { useAuth } from "./AuthContext";
 
 interface CourseContextType {
   courses: Course[];
-  materials: Material[];
-  assignments: Assignment[];
-  submissions: Submission[];
-  grades: Grade[];
   loading: boolean;
-  getUserCourses: () => Course[];
-  getCourseById: (id: string) => Course | undefined;
-  createCourse: (course: Omit<Course, 'id' | 'studentIds'>) => Course;
-  enrollInCourse: (courseCode: string) => boolean;
-  getCourseMaterials: (courseId: string) => Material[];
-  getCourseAssignments: (courseId: string) => Assignment[];
-  getAssignmentSubmissions: (assignmentId: string) => Submission[];
-  getStudentSubmissions: () => Submission[];
-  createMaterial: (material: Omit<Material, 'id' | 'dateAdded'>) => Material;
-  createAssignment: (assignment: Omit<Assignment, 'id'>) => Assignment;
-  submitAssignment: (submission: Omit<Submission, 'id' | 'submissionDate' | 'status'>) => Submission;
-  gradeSubmission: (grade: Omit<Grade, 'id' | 'gradedDate'>) => Grade;
-  getCourseStudents: (courseId: string) => User[];
-  getAssignmentById: (id: string) => Assignment | undefined;
-  getStudentSubmission: (assignmentId: string, studentId: string) => Submission | undefined;
-  createSubmission: (submission: Omit<Submission, 'id'>) => Submission;
-  createGrade: (grade: Omit<Grade, 'id'>) => Grade;
-  excludeStudentFromCourse: (courseId: string, studentId: string) => boolean;
+  error: string | null;
+  getAllCourses: () => Promise<void>;
+  getCourseById: (id: number) => Promise<Course | undefined>;
+  createCourse: (course: Course) => Promise<void>;
+  enrollInCourse: (joinCode: string) => Promise<void>;
+  getItemsByCourse: (courseId: number) => Promise<(CourseMaterial | Quiz)[]>;
+  createMaterial: (
+    title: string,
+    courseId: number,
+    file: File
+  ) => Promise<void>;
+  createQuiz: (courseId: number, quiz: Quiz) => Promise<void>;
+  addQuestion: (quizId: number, question: Question) => Promise<void>;
+  startSubmission: (quizId: number) => Promise<Submission>;
+  submitSubmission: (
+    submissionId: number,
+    answers: Answer[]
+  ) => Promise<Submission>;
+  getSubmissionById: (id: number) => Promise<Submission>;
+  markItemAsCompleted: (itemId: number) => Promise<void>;
+  getCompletedItemsByCourse: (
+    courseId: number
+  ) => Promise<CompletedCourseItem[]>;
+  removeCompletedItem: (completedItemId: number) => Promise<void>;
 }
 
 const CourseContext = createContext<CourseContextType | undefined>(undefined);
@@ -63,7 +58,7 @@ const CourseContext = createContext<CourseContextType | undefined>(undefined);
 export const useCourses = (): CourseContextType => {
   const context = useContext(CourseContext);
   if (!context) {
-    throw new Error('useCourses must be used within a CourseProvider');
+    throw new Error("useCourses must be used within a CourseProvider");
   }
   return context;
 };
@@ -73,154 +68,207 @@ interface CourseProviderProps {
 }
 
 export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const { currentUser } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const { currentUser, isAuthenticated } = useAuth();
+
+  const getAllCourses = async () => {
+    if (!isAuthenticated) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await courseApi.getAllCourses();
+      setCourses(data);
+    } catch (err) {
+      console.error("Failed to fetch courses:", err);
+      setError("Failed to load courses. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCourseById = async (id: number) => {
+    try {
+      return await courseApi.getCourseById(id);
+    } catch (err) {
+      console.error(`Failed to get course with ID ${id}:`, err);
+      setError("Failed to load course details. Please try again later.");
+      return undefined;
+    }
+  };
+
+  const createCourse = async (course: Course) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await courseApi.createCourse(course);
+      await getAllCourses();
+    } catch (err) {
+      console.error("Failed to create course:", err);
+      setError("Failed to create course. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const enrollInCourse = async (joinCode: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await enrollmentApi.enrollInCourse(joinCode);
+      await getAllCourses();
+    } catch (err) {
+      console.error("Failed to enroll in course:", err);
+      setError(
+        "Failed to enroll in course. Please check the join code and try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getItemsByCourse = async (courseId: number) => {
+    try {
+      return await courseItemApi.getItemsByCourse(courseId);
+    } catch (err) {
+      console.error(`Failed to get items for course ${courseId}:`, err);
+      setError("Failed to load course items. Please try again later.");
+      return [];
+    }
+  };
+
+  const createMaterial = async (
+    title: string,
+    courseId: number,
+    file: File
+  ) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await materialApi.createMaterial(title, courseId, file);
+    } catch (err) {
+      console.error("Failed to create material:", err);
+      setError("Failed to upload material. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createQuiz = async (courseId: number, quiz: Quiz) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await quizApi.createQuiz(courseId, quiz);
+    } catch (err) {
+      console.error("Failed to create quiz:", err);
+      setError("Failed to create quiz. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addQuestion = async (quizId: number, question: Question) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await quizApi.addQuestion(quizId, question);
+    } catch (err) {
+      console.error("Failed to add question:", err);
+      setError("Failed to add question. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startSubmission = async (quizId: number) => {
+    try {
+      return await submissionApi.startSubmission(quizId);
+    } catch (err) {
+      console.error("Failed to start submission:", err);
+      setError("Failed to start quiz. Please try again later.");
+      throw err; // Need to throw to handle in the component
+    }
+  };
+
+  const submitSubmission = async (submissionId: number, answers: Answer[]) => {
+    try {
+      return await submissionApi.submitSubmission(submissionId, answers);
+    } catch (err) {
+      console.error("Failed to submit answers:", err);
+      setError("Failed to submit quiz. Please try again later.");
+      throw err; // Need to throw to handle in the component
+    }
+  };
+
+  const getSubmissionById = async (id: number) => {
+    try {
+      return await submissionApi.getSubmissionById(id);
+    } catch (err) {
+      console.error(`Failed to get submission ${id}:`, err);
+      setError("Failed to load submission. Please try again later.");
+      throw err;
+    }
+  };
+
+  const markItemAsCompleted = async (itemId: number) => {
+    setError(null);
+    try {
+      await completedItemApi.markItemAsCompleted(itemId);
+    } catch (err) {
+      console.error("Failed to mark item as completed:", err);
+      setError("Failed to update progress. Please try again later.");
+    }
+  };
+
+  const getCompletedItemsByCourse = async (courseId: number) => {
+    try {
+      return await completedItemApi.getCompletedItemsByCourse(courseId);
+    } catch (err) {
+      console.error("Failed to get completed items:", err);
+      setError("Failed to load progress data. Please try again later.");
+      return [];
+    }
+  };
+
+  const removeCompletedItem = async (completedItemId: number) => {
+    setError(null);
+    try {
+      await completedItemApi.removeCompletedItem(completedItemId);
+    } catch (err) {
+      console.error("Failed to remove completed item:", err);
+      setError("Failed to update progress. Please try again later.");
+    }
+  };
 
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setLoading(false);
-    }, 500);
-  }, []);
-
-  const getUserCourses = (): Course[] => {
-    if (!currentUser) return [];
-
-    if (currentUser.role === 'teacher') {
-      return getCoursesByTeacherId(currentUser.id);
-    } else {
-      return getCoursesByStudentId(currentUser.id);
+    if (isAuthenticated) {
+      getAllCourses();
     }
-  };
-
-  const getCourseById = (id: string): Course | undefined => {
-    return courses.find(course => course.id === id);
-  };
-
-  const createCourse = (courseData: Omit<Course, 'id' | 'studentIds'>): Course => {
-    const newCourse = addCourse({
-      ...courseData,
-      studentIds: [],
-    });
-    return newCourse;
-  };
-
-  const enrollInCourse = (courseCode: string): boolean => {
-    if (!currentUser || currentUser.role !== 'student') return false;
-    return enrollStudentInCourse(currentUser.id, courseCode);
-  };
-
-  const getCourseMaterials = (courseId: string): Material[] => {
-    return getMaterialsByCourseId(courseId);
-  };
-
-  const getCourseAssignments = (courseId: string): Assignment[] => {
-    return getAssignmentsByCourseId(courseId);
-  };
-
-  const getAssignmentSubmissions = (assignmentId: string): Submission[] => {
-    return getSubmissionsByAssignmentId(assignmentId);
-  };
-
-  const getStudentSubmissions = (): Submission[] => {
-    if (!currentUser || currentUser.role !== 'student') return [];
-    return getSubmissionsByStudentId(currentUser.id);
-  };
-
-  const createMaterial = (materialData: Omit<Material, 'id' | 'dateAdded'>): Material => {
-    return addMaterial(materialData);
-  };
-
-  const createAssignment = (assignmentData: Omit<Assignment, 'id'>): Assignment => {
-    return addAssignment(assignmentData);
-  };
-
-  const submitAssignment = (
-    submissionData: Omit<Submission, 'id' | 'submissionDate' | 'status'>
-  ): Submission => {
-    return addSubmission(submissionData);
-  };
-
-  const gradeSubmission = (gradeData: Omit<Grade, 'id' | 'gradedDate'>): Grade => {
-    return addGrade(gradeData);
-  };
-
-  const getCourseStudents = (courseId: string): User[] => {
-    return getStudentsByCourseId(courseId);
-  };
-
-  const getAssignmentById = (id: string): Assignment | undefined => {
-    return assignments.find(assignment => assignment.id === id);
-  };
-
-  const getStudentSubmission = (assignmentId: string, studentId: string): Submission | undefined => {
-    return submissions.find(
-      submission => submission.assignmentId === assignmentId && submission.studentId === studentId
-    );
-  };
-
-  const createSubmission = (submissionData: Omit<Submission, 'id'>): Submission => {
-    return addSubmission({
-      ...submissionData,
-      submissionDate: submissionData.submissionDate || new Date().toISOString(),
-      status: submissionData.status || 'submitted'
-    });
-  };
-
-  const createGrade = (gradeData: Omit<Grade, 'id'>): Grade => {
-    return addGrade({
-      ...gradeData,
-      gradedDate: gradeData.gradedDate || new Date().toISOString()
-    });
-  };
-
-  const excludeStudentFromCourse = (courseId: string, studentId: string): boolean => {
-    try {
-      const courseIndex = courses.findIndex(c => c.id === courseId);
-      if (courseIndex === -1) return false;
-      
-      const course = courses[courseIndex];
-      if (!course.studentIds.includes(studentId)) return false;
-      
-      // Remove student from course
-      courses[courseIndex] = {
-        ...course,
-        studentIds: course.studentIds.filter(id => id !== studentId)
-      };
-      
-      return true;
-    } catch (error) {
-      console.error('Failed to exclude student:', error);
-      return false;
-    }
-  };
+  }, [isAuthenticated]);
 
   const value = {
     courses,
-    materials,
-    assignments,
-    submissions,
-    grades,
     loading,
-    getUserCourses,
+    error,
+    getAllCourses,
     getCourseById,
     createCourse,
     enrollInCourse,
-    getCourseMaterials,
-    getCourseAssignments,
-    getAssignmentSubmissions,
-    getStudentSubmissions,
+    getItemsByCourse,
     createMaterial,
-    createAssignment,
-    submitAssignment,
-    gradeSubmission,
-    getCourseStudents,
-    getAssignmentById,
-    getStudentSubmission,
-    createSubmission,
-    createGrade,
-    excludeStudentFromCourse
+    createQuiz,
+    addQuestion,
+    startSubmission,
+    submitSubmission,
+    getSubmissionById,
+    markItemAsCompleted,
+    getCompletedItemsByCourse,
+    removeCompletedItem,
   };
 
-  return <CourseContext.Provider value={value}>{children}</CourseContext.Provider>;
+  return (
+    <CourseContext.Provider value={value}>{children}</CourseContext.Provider>
+  );
 };

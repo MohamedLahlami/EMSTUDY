@@ -1,14 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, UserRole } from '../types';
-import { getUserByEmail, users } from '../data/mockData';
+import { login as apiLogin, register as apiRegister, AuthResponse, LoginRequest, UserDTO } from '../api/authApi';
 
 interface AuthContextType {
-  currentUser: User | null;
+  currentUser: any; // You can refine this type if you have a user info endpoint
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<User>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<User>;
+  register: (data: UserDTO) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,71 +24,60 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+function parseJwt(token: string) {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch {
+    return null;
+  }
+}
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for user in localStorage
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
+    const token = localStorage.getItem('jwt');
+    if (token) {
+      const user = parseJwt(token);
+      if (user && user.role) {
+        if (user.role === 'TEACHER') user.role = 'Teacher';
+        if (user.role === 'STUDENT') user.role = 'Student';
+      }
+      setCurrentUser(user);
     }
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<User> => {
-    // Simulate API call
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const user = getUserByEmail(email);
-        
-        if (user && user.password === password) {
-          setCurrentUser(user);
-          localStorage.setItem('currentUser', JSON.stringify(user));
-          resolve(user);
-        } else {
-          reject(new Error('Invalid email or password'));
-        }
-      }, 500);
-    });
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const res: AuthResponse = await apiLogin({ email, password });
+      localStorage.setItem('jwt', res.token);
+      const user = parseJwt(res.token);
+      if (user && user.role) {
+        if (user.role === 'TEACHER') user.role = 'Teacher';
+        if (user.role === 'STUDENT') user.role = 'Student';
+      }
+      setCurrentUser(user);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem('jwt');
   };
 
-  const register = async (
-    name: string, 
-    email: string, 
-    password: string, 
-    role: UserRole
-  ): Promise<User> => {
-    // Simulate API call
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const existingUser = getUserByEmail(email);
-        
-        if (existingUser) {
-          reject(new Error('Email already in use'));
-          return;
-        }
-        
-        const newUser: User = {
-          id: (users.length + 1).toString(),
-          name,
-          email,
-          password,
-          role,
-        };
-        
-        users.push(newUser);
-        setCurrentUser(newUser);
-        localStorage.setItem('currentUser', JSON.stringify(newUser));
-        resolve(newUser);
-      }, 500);
-    });
+  const register = async (data: UserDTO) => {
+    setIsLoading(true);
+    try {
+      await apiRegister(data);
+      // Optionally, auto-login after registration
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const value = {

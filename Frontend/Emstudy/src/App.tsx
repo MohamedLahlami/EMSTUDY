@@ -37,12 +37,12 @@ function App() {
             </Route>
             
             {/* Teacher-only Routes */}
-            <Route element={<ProtectedRoute requiredRole="teacher" />}>
+            <Route element={<ProtectedRoute requiredRole="Teacher" />}>
               <Route path="/courses/create" element={<CreateCoursePage />} />
             </Route>
             
             {/* Student-only Routes */}
-            <Route element={<ProtectedRoute requiredRole="student" />}>
+            <Route element={<ProtectedRoute requiredRole="Student" />}>
               <Route path="/enroll" element={<EnrollPage />} />
             </Route>
             

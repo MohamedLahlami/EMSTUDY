@@ -12,7 +12,7 @@ const LoginForm: React.FC = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,11 +24,14 @@ const LoginForm: React.FC = () => {
       await login(email, password);
       navigate("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to login");
+      setError(err instanceof Error ? err.message : "Failed to login. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Combined loading state with the auth context
+  const isSubmitting = isLoading || authLoading;
 
   return (
     <motion.div
@@ -99,36 +102,10 @@ const LoginForm: React.FC = () => {
             type="submit"
             variant="primary"
             fullWidth
-            isLoading={isLoading}
+            isLoading={isSubmitting}
             icon={<LogIn size={18} />}
           >
             Sign in
-          </Button>
-        </div>
-
-        {/* Demo login shortcuts */}
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setEmail("john.smith@example.com");
-              setPassword("password123");
-            }}
-          >
-            Teacher Demo
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setEmail("emily.davis@example.com");
-              setPassword("password123");
-            }}
-          >
-            Student Demo
           </Button>
         </div>
       </form>

@@ -1,0 +1,22 @@
+import api from "./apiClient";
+import { Submission, Answer } from "../types";
+
+export const startSubmission = async (quizId: number): Promise<Submission> => {
+  const res = await api.post<Submission>(`/submissions/start/?quizId=${quizId}`);
+  return res.data;
+};
+
+export const submitSubmission = async (submissionId: number, answers: Answer[]): Promise<Submission> => {
+  const res = await api.put<Submission>(`/submissions/${submissionId}`, answers);
+  return res.data;
+};
+
+export const getSubmissionById = async (id: number): Promise<Submission> => {
+  const res = await api.get<Submission>(`/submissions/${id}`);
+  return res.data;
+};
+
+export const getAllSubmissions = async (): Promise<Submission[]> => {
+  const res = await api.get<Submission[]>("/submissions");
+  return res.data;
+}; 

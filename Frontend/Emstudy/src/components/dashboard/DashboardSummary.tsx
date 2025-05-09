@@ -1,48 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PlusCircle, BookOpen, ClipboardList, Users } from 'lucide-react';
+import { PlusCircle, BookOpen, ClipboardList, Users, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../context/CourseContext';
 import Button from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
-import AssignmentCalendar from './AssignmentCalendar';
+import { Course, Quiz, Submission } from '../../types';
 
 const DashboardSummary: React.FC = () => {
   const { currentUser } = useAuth();
-  const { getUserCourses, assignments, getStudentSubmissions, materials } = useCourses();
+  const { courses, loading, error, getAllCourses } = useCourses();
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
   const navigate = useNavigate();
   
-  const courses = getUserCourses();
-  const isTeacher = currentUser?.role === 'teacher';
-  
-  // Get upcoming assignments or submissions
-  const upcomingItems = isTeacher 
-    ? assignments.filter(a => {
-        const course = courses.find(c => c.id === a.courseId);
-        return course && new Date(a.dueDate) >= new Date();
-      }).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()).slice(0, 3)
-    : getStudentSubmissions()
-        .filter(s => s.status !== 'graded' && s.status !== 'submitted')
-        .map(s => {
-          const assignment = assignments.find(a => a.id === s.assignmentId);
-          return { submission: s, assignment };
-        })
-        .filter(item => item.assignment)
-        .sort((a, b) => {
-          if (!a.assignment || !b.assignment) return 0;
-          return new Date(a.assignment.dueDate).getTime() - new Date(b.assignment.dueDate).getTime();
-        })
-        .slice(0, 3);
-  
-  // Get relevant assignments and materials for the calendar
-  const relevantAssignments = assignments.filter(a => 
-    courses.some(c => c.id === a.courseId)
-  );
-  
-  const relevantMaterials = materials.filter(m => 
-    courses.some(c => c.id === m.courseId)
-  );
+  const isTeacher = currentUser?.role === 'Teacher';
+
+  useEffect(() => {
+    if (!loading && courses.length > 0) {
+      setIsLoading(false);
+    }
+  }, [loading, courses]);
   
   const cardVariants = {
     initial: { opacity: 0, y: 20 },
@@ -61,7 +42,7 @@ const DashboardSummary: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-xl font-bold text-gray-900">
-            Welcome back, {currentUser?.name}!
+            Welcome back, {currentUser?.username || 'User'}!
           </h2>
           <p className="text-gray-500 mt-1">
             Here's what's happening with your {isTeacher ? 'courses' : 'learning'} today.
@@ -89,147 +70,139 @@ const DashboardSummary: React.FC = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <motion.div
-          custom={0}
-          initial="initial"
-          animate="animate"
-          variants={cardVariants}
-        >
-          <Card className="h-full">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg text-gray-900">My Courses</h3>
-                <BookOpen className="h-8 w-8 text-blue-500" />
-              </div>
-              <p className="text-3xl font-bold mt-4">{courses.length}</p>
-              <p className="text-gray-500 mt-1">Active courses</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => navigate('/courses')}
-              >
-                View all courses
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-        
-        <motion.div
-          custom={1}
-          initial="initial"
-          animate="animate"
-          variants={cardVariants}
-        >
-          <Card className="h-full">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg text-gray-900">
-                  {isTeacher ? 'Assignments' : 'Tasks'}
-                </h3>
-                <ClipboardList className="h-8 w-8 text-indigo-500" />
-              </div>
-              {isTeacher ? (
-                <>
-                  <p className="text-3xl font-bold mt-4">
-                    {assignments.filter(a => {
-                      const course = courses.find(c => c.id === a.courseId);
-                      return !!course;
-                    }).length}
-                  </p>
-                  <p className="text-gray-500 mt-1">Total assignments</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-3xl font-bold mt-4">
-                    {getStudentSubmissions().filter(s => s.status !== 'graded').length}
-                  </p>
-                  <p className="text-gray-500 mt-1">Pending tasks</p>
-                </>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => navigate('/courses')}
-              >
-                Manage {isTeacher ? 'assignments' : 'tasks'}
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-        
-        <motion.div
-          custom={2}
-          initial="initial"
-          animate="animate"
-          variants={cardVariants}
-        >
-          {isTeacher ? (
-            <Card className="h-full">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-lg text-gray-900">Students</h3>
-                  <Users className="h-8 w-8 text-green-500" />
-                </div>
-                <p className="text-3xl font-bold mt-4">
-                  {new Set(courses.flatMap(c => c.studentIds)).size}
-                </p>
-                <p className="text-gray-500 mt-1">Total enrolled students</p>
-                <div className="mt-4 text-sm text-gray-500">
-                  Across all your courses
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="h-full">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-lg text-gray-900">Completed</h3>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                  </svg>
-                </div>
-                <p className="text-3xl font-bold mt-4">
-                  {getStudentSubmissions().filter(s => s.status === 'graded').length}
-                </p>
-                <p className="text-gray-500 mt-1">Graded submissions</p>
-                <div className="mt-4 text-sm text-gray-500">
-                  View your progress
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </motion.div>
-      </div>
+      {error && (
+        <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="font-semibold">
-              {isTeacher ? 'Upcoming Assignment Deadlines' : 'Upcoming Tasks'}
-            </h3>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <motion.div
+              custom={0}
+              initial="initial"
+              animate="animate"
+              variants={cardVariants}
+            >
+              <Card className="h-full">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-lg text-gray-900">My Courses</h3>
+                    <BookOpen className="h-8 w-8 text-blue-500" />
+                  </div>
+                  <p className="text-3xl font-bold mt-4">{courses.length}</p>
+                  <p className="text-gray-500 mt-1">Active courses</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => navigate('/courses')}
+                  >
+                    View all courses
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+            
+            <motion.div
+              custom={1}
+              initial="initial"
+              animate="animate"
+              variants={cardVariants}
+            >
+              <Card className="h-full">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-lg text-gray-900">
+                      {isTeacher ? 'Quizzes' : 'Assessments'}
+                    </h3>
+                    <ClipboardList className="h-8 w-8 text-indigo-500" />
+                  </div>
+                  <p className="text-3xl font-bold mt-4">
+                    {0} {/* Will be replaced with actual quiz count */}
+                  </p>
+                  <p className="text-gray-500 mt-1">
+                    {isTeacher ? 'Total quizzes' : 'Pending quizzes'}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => navigate('/courses')}
+                  >
+                    Manage {isTeacher ? 'quizzes' : 'assessments'}
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+            
+            <motion.div
+              custom={2}
+              initial="initial"
+              animate="animate"
+              variants={cardVariants}
+            >
+              {isTeacher ? (
+                <Card className="h-full">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-lg text-gray-900">Students</h3>
+                      <Users className="h-8 w-8 text-green-500" />
+                    </div>
+                    <p className="text-3xl font-bold mt-4">
+                      {0} {/* Will be filled with proper count */}
+                    </p>
+                    <p className="text-gray-500 mt-1">Total enrolled students</p>
+                    <div className="mt-4 text-sm text-gray-500">
+                      Across all your courses
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="h-full">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-lg text-gray-900">Completed</h3>
+                      <CheckCircle className="h-8 w-8 text-green-500" />
+                    </div>
+                    <p className="text-3xl font-bold mt-4">
+                      {0} {/* Will be filled with proper count */}
+                    </p>
+                    <p className="text-gray-500 mt-1">Completed items</p>
+                    <div className="mt-4 text-sm text-gray-500">
+                      View your progress
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </motion.div>
           </div>
           
-          <div className="divide-y divide-gray-200">
-            {upcomingItems.length > 0 ? (
-              isTeacher ? (
-                // Teacher view - upcoming assignments
-                upcomingItems.map((assignment, index) => (
-                  <div key={assignment.id} className="px-6 py-4 hover:bg-gray-50">
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="font-semibold">Your Courses</h3>
+            </div>
+            
+            <div className="divide-y divide-gray-200">
+              {courses.length > 0 ? (
+                courses.map((course) => (
+                  <div key={course.courseId} className="px-6 py-4 hover:bg-gray-50">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-medium">{assignment.title}</h4>
+                        <h4 className="font-medium">{course.name}</h4>
                         <p className="text-sm text-gray-500">
-                          Due: {new Date(assignment.dueDate).toLocaleDateString()}
+                          {course.description}
                         </p>
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/courses/${assignment.courseId}`)}
+                        onClick={() => navigate(`/courses/${course.courseId}`)}
                       >
                         View
                       </Button>
@@ -237,43 +210,22 @@ const DashboardSummary: React.FC = () => {
                   </div>
                 ))
               ) : (
-                // Student view - upcoming submissions
-                upcomingItems.map((item, index) => {
-                  if (!item.assignment) return null;
-                  return (
-                    <div key={item.submission.id} className="px-6 py-4 hover:bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium">{item.assignment.title}</h4>
-                          <p className="text-sm text-gray-500">
-                            Due: {new Date(item.assignment.dueDate).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/courses/${item.assignment?.courseId}`)}
-                        >
-                          View
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })
-              )
-            ) : (
-              <div className="px-6 py-8 text-center text-gray-500">
-                No upcoming {isTeacher ? 'deadlines' : 'tasks'} at the moment.
-              </div>
-            )}
+                <div className="px-6 py-8 text-center text-gray-500">
+                  <p>No courses found.</p>
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => isTeacher ? navigate('/courses/create') : navigate('/enroll')}
+                  >
+                    {isTeacher ? 'Create your first course' : 'Enroll in a course'}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-        
-        <AssignmentCalendar 
-          assignments={relevantAssignments} 
-          materials={relevantMaterials} 
-        />
-      </div>
+        </>
+      )}
     </div>
   );
 };
