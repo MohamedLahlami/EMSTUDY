@@ -9,9 +9,9 @@ jwt:
 
 spring:
   datasource:
-    url: ${BD_URL:jdbc:mysql://localhost:3306/emstudy}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:}
+    url: jdbc:mysql://db:3306/appdb
+    username: user
+    password: pass
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   servlet:
