@@ -102,13 +102,13 @@ public class SubmissionController {
     @PutMapping("/{submissionId}")
     public ResponseEntity<Submission> submitSubmission(
             @Parameter(description = "ID of the submission") @PathVariable Long submissionId,
-            @Parameter(description = "List of answers") @RequestBody List<Answer> answers,
+            @Parameter(description = "List of answer Ids") @RequestBody List<Long> answerIds,
             @RequestAttribute("userId") Long studentId) {
         Submission submission = submissionService.getSubmissionById(submissionId).orElseThrow(() -> new ResourceNotFoundException("Submission not found"));
         if (!studentId.equals(submission.getStudent().getUserId())){
             throw new ForbiddenAccessException("You are not allowed to submit this submission");
         }
-        return new ResponseEntity<>(submissionService.submitSubmission(submissionId, answers), HttpStatus.CREATED);
+        return new ResponseEntity<>(submissionService.submitSubmission(submissionId, answerIds), HttpStatus.CREATED);
     }
 
     @Operation(

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { Book, FileText, Calendar, Users, Clock, Plus } from "lucide-react";
 import { format } from "date-fns";
@@ -9,6 +9,7 @@ import { Card, CardContent } from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { Course, CourseMaterial, Quiz } from "../../types";
 import api from "../../api/apiClient";
+import QuizManager from "../../components/quiz/QuizManager";
 
 const CourseDetailsPage = () => {
   const { courseId } = useParams();
@@ -524,68 +525,66 @@ const CourseDetailsPage = () => {
 
           {activeTab === "quizzes" && (
             <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold">Quizzes</h2>
-                {isTeacher && (
-                  <Button
-                    variant="primary"
-                    icon={<Plus size={18} />}
-                    onClick={() => setShowCreateQuiz(true)}
-                  >
-                    Create Quiz
-                  </Button>
-                )}
-              </div>
-
-              {quizzes.length > 0 ? (
-                <div className="space-y-4">
-                  {quizzes.map((quiz) => (
-                    <Card key={quiz.itemId}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start">
-                          <div className="flex-shrink-0 pt-1">
-                            <FileText className="h-6 w-6 text-indigo-500" />
-                          </div>
-                          <div className="ml-4 flex-1">
-                            <h3 className="text-lg font-medium text-gray-900">
-                              {quiz.title}
-                            </h3>
-                            <div className="mt-2 flex items-center text-sm text-gray-500">
-                              <Clock className="h-4 w-4 mr-1" />
-                              <span>
-                                Duration: {quiz.durationInMinutes} minutes
-                              </span>
-                            </div>
-                          </div>
-                          <div className="ml-4">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewQuiz(quiz)}
-                            >
-                              {isTeacher ? "Edit" : "Start"}
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+              {isTeacher ? (
+                // Teacher view - use the new QuizManager component
+                <QuizManager courseId={Number(courseId)} />
               ) : (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                  <Book className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    No quizzes yet
-                  </h3>
-                  <p className="text-gray-500">
-                    {isTeacher
-                      ? "Create your first quiz to test your students' knowledge."
-                      : "Your teacher has not created any quizzes yet."}
-                  </p>
-                </div>
+                // Student view - keep existing code
+                <>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-semibold">Quizzes</h2>
+                  </div>
+
+                  {quizzes.length > 0 ? (
+                    <div className="space-y-4">
+                      {quizzes.map((quiz) => (
+                        <Card key={quiz.itemId}>
+                          <CardContent className="p-4">
+                            <div className="flex items-start">
+                              <div className="flex-shrink-0 pt-1">
+                                <FileText className="h-6 w-6 text-indigo-500" />
+                              </div>
+                              <div className="ml-4 flex-1">
+                                <h3 className="text-lg font-medium text-gray-900">
+                                  {quiz.title}
+                                </h3>
+                                <div className="mt-2 flex items-center text-sm text-gray-500">
+                                  <Clock className="h-4 w-4 mr-1" />
+                                  <span>
+                                    Duration: {quiz.durationInMinutes} minutes
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="ml-4">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleViewQuiz(quiz)}
+                                >
+                                  Start
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                      <Book className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No quizzes yet
+                      </h3>
+                      <p className="text-gray-500">
+                        Your teacher has not created any quizzes yet.
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
 
-              {showCreateQuiz && (
+              {/* Remove the teacher's quiz creation modal since it's handled in QuizManager now */}
+              {isTeacher && showCreateQuiz && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
                     <h2 className="text-xl font-bold mb-4">Create Quiz</h2>

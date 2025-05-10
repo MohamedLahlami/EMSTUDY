@@ -1,125 +1,176 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { FileText, Clock, ArrowLeft, Users, CheckCircle } from 'lucide-react';
-import PageLayout from '../../components/layout/PageLayout';
-import { useAuth } from '../../context/AuthContext';
-import { useCourses } from '../../context/CourseContext';
-import { Card, CardContent } from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import QuizSubmissionForm from '../../components/quiz/QuizSubmissionForm';
-import { Quiz, Submission, Answer } from '../../types';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, Navigate } from "react-router-dom";
+import { format } from "date-fns";
+import { FileText, Clock, ArrowLeft, Users, CheckCircle } from "lucide-react";
+import PageLayout from "../../components/layout/PageLayout";
+import { useAuth } from "../../context/AuthContext";
+import { useCourses } from "../../context/CourseContext";
+import { Card, CardContent } from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import QuizSubmissionForm from "../../components/quiz/QuizSubmissionForm";
+import { Quiz, Submission, Answer, Course } from "../../types";
 
 const QuizViewPage = () => {
   const { courseId, quizId } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { 
-    getCourseById, 
+  const {
+    getCourseById,
     getItemsByCourse,
     startSubmission,
     submitSubmission,
     getSubmissionById,
-    getSubmissionByQuizAndStudent
+    getSubmissionByQuizAndStudent,
   } = useCourses();
 
-  const [course, setCourse] = useState(null);
+  const [course, setCourse] = useState<Course | null>(null);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [quizStarted, setQuizStarted] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
+  const [timerInterval, setTimerInterval] = useState<ReturnType<
+    typeof setInterval
+  > | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
-      if (!courseId || !quizId) return;
+      if (!courseId || !quizId) {
+        setError("Missing courseId or quizId");
+        setLoading(false);
+        return;
+      }
 
       try {
         setLoading(true);
         setError(null);
-        
+
         // Load course
         const courseData = await getCourseById(Number(courseId));
         if (!courseData) {
-          setError('Course not found');
+          setError("Course not found");
           setLoading(false);
           return;
         }
         setCourse(courseData);
-        
-        // Load quiz
+
+        // Load course items to find the quiz
         const items = await getItemsByCourse(Number(courseId));
         const quizData = items.find(
-          (item) => item.itemType === 'Quiz' && item.itemId === Number(quizId)
+          (item) => item.itemType === "Q" && item.itemId === Number(quizId)
         ) as Quiz | undefined;
-        
+
         if (!quizData) {
-          setError('Quiz not found');
+          setError("Quiz not found");
           setLoading(false);
           return;
         }
-        
+
         setQuiz(quizData);
-        
+
         // If student, check for existing submission
-        if (currentUser && currentUser.role === 'Student' && currentUser.userId) {
+        if (
+          currentUser &&
+          currentUser.role === "Student" &&
+          currentUser.userId
+        ) {
           try {
             const existingSubmission = await getSubmissionByQuizAndStudent(
               Number(quizId),
               currentUser.userId
             );
-            setSubmission(existingSubmission);
+
+            if (existingSubmission) {
+              setSubmission(existingSubmission);
+              // If submission exists and was already submitted, show completed state
+              if (existingSubmission.submitted) {
+                setQuizStarted(false);
+              }
+              // If submission exists but was not submitted (was started but interrupted)
+              else {
+                setQuizStarted(true);
+                setShowSubmissionForm(true);
+
+                // Calculate remaining time
+                if (existingSubmission.endTime && quizData.durationInMinutes) {
+                  const endTime = new Date(
+                    existingSubmission.endTime
+                  ).getTime();
+                  const now = new Date().getTime();
+                  const remainingMs = Math.max(0, endTime - now);
+                  const remainingSec = Math.floor(remainingMs / 1000);
+
+                  if (remainingSec > 0) {
+                    setTimeRemaining(remainingSec);
+                  } else {
+                    // Time already expired
+                    setTimeRemaining(0);
+                  }
+                }
+              }
+            }
           } catch (err) {
             // No submission found, which is fine
-            console.log('No existing submission found');
+            console.log("No existing submission found");
           }
         }
-        
+
         setLoading(false);
       } catch (err) {
-        console.error('Error loading quiz data:', err);
-        setError('Failed to load quiz. Please try again later.');
+        console.error("Error loading quiz data:", err);
+        setError("Failed to load quiz. Please try again later.");
         setLoading(false);
       }
     };
-    
+
     loadData();
-  }, [courseId, quizId, getCourseById, getItemsByCourse, currentUser, getSubmissionByQuizAndStudent]);
+  }, [
+    courseId,
+    quizId,
+    getCourseById,
+    getItemsByCourse,
+    currentUser,
+    getSubmissionByQuizAndStudent,
+  ]);
 
   // Start quiz timer when quiz is started
   useEffect(() => {
     if (quizStarted && quiz && timeRemaining > 0) {
       const interval = setInterval(() => {
-        setTimeRemaining(prevTime => {
+        setTimeRemaining((prevTime) => {
           if (prevTime <= 1) {
             clearInterval(interval);
-            handleSubmit([]); // Auto-submit when time runs out
+            // Don't auto-submit with empty answers, just show a time expired message
+            setTimeRemaining(0);
+            setError(
+              "Time expired! Your quiz has automatically been submitted."
+            );
+            setQuizStarted(false);
             return 0;
           }
           return prevTime - 1;
         });
       }, 1000);
-      
+
       setTimerInterval(interval);
-      
+
       return () => clearInterval(interval);
     }
   }, [quizStarted, quiz, timeRemaining]);
 
   // Handle submit function
-  const handleSubmit = async (answers: Answer[]) => {
+  const handleSubmit = async (answerIds: number[]) => {
     if (!submission || !submission.submissionId) {
-      console.error('No active submission to submit');
+      console.error("No active submission to submit");
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
-      const result = await submitSubmission(submission.submissionId, answers);
+      const result = await submitSubmission(submission.submissionId, answerIds);
       setSubmission(result);
       setIsSubmitting(false);
       setQuizStarted(false);
@@ -128,8 +179,9 @@ const QuizViewPage = () => {
       }
       navigate(`/courses/${courseId}`);
     } catch (error) {
-      console.error('Failed to submit quiz:', error);
+      console.error("Failed to submit quiz:", error);
       setIsSubmitting(false);
+      setError("Failed to submit your answers. Please try again.");
     }
   };
 
@@ -145,25 +197,36 @@ const QuizViewPage = () => {
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+    return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`;
   };
 
   const handleStartQuiz = async () => {
     if (!quiz || !quiz.itemId) return;
-    
+
     try {
       setIsSubmitting(true);
+      setError(null);
       const newSubmission = await startSubmission(quiz.itemId);
       setSubmission(newSubmission);
-      if (quiz.durationInMinutes) {
+
+      // Set timer based on submission end time
+      if (newSubmission.endTime) {
+        const endTime = new Date(newSubmission.endTime).getTime();
+        const now = new Date().getTime();
+        const remainingMs = Math.max(0, endTime - now);
+        const remainingSec = Math.floor(remainingMs / 1000);
+        setTimeRemaining(remainingSec);
+      } else if (quiz.durationInMinutes) {
+        // Fallback to quiz duration if no end time
         setTimeRemaining(quiz.durationInMinutes * 60);
       }
+
       setQuizStarted(true);
       setShowSubmissionForm(true);
       setIsSubmitting(false);
     } catch (error) {
-      console.error('Failed to start quiz:', error);
-      setError('Failed to start quiz. Please try again.');
+      console.error("Failed to start quiz:", error);
+      setError("Failed to start quiz. Please try again.");
       setIsSubmitting(false);
     }
   };
@@ -182,20 +245,20 @@ const QuizViewPage = () => {
     return (
       <PageLayout>
         <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error || 'Failed to load quiz'}
+          {error || "Failed to load quiz"}
         </div>
         <Button
           variant="outline"
           icon={<ArrowLeft size={16} />}
-          onClick={() => navigate("/courses")}
+          onClick={() => navigate(`/courses/${courseId}`)}
         >
-          Back to Courses
+          Back to Course
         </Button>
       </PageLayout>
     );
   }
 
-  const isTeacher = currentUser?.role === 'Teacher';
+  const isTeacher = currentUser?.role === "Teacher";
   const isPastDue = quiz.addDate && new Date(quiz.addDate) < new Date(); // Using addDate as dueDate for now
   const hasSubmitted = submission?.submitted === true;
 
@@ -225,7 +288,9 @@ const QuizViewPage = () => {
                     <span>Duration: {quiz.durationInMinutes} minutes</span>
                   </div>
                 )}
-                <div>Show Correct Answers: {quiz.showCorrectAnswers ? 'Yes' : 'No'}</div>
+                <div>
+                  Show Correct Answers: {quiz.showCorrectAnswers ? "Yes" : "No"}
+                </div>
               </div>
             </div>
           </div>
@@ -241,25 +306,32 @@ const QuizViewPage = () => {
               <div className="space-y-4">
                 {quiz.questions && (
                   <div className="space-y-4">
-                    <h3 className="font-medium text-gray-900">Quiz Questions</h3>
+                    <h3 className="font-medium text-gray-900">
+                      Quiz Questions
+                    </h3>
                     {quiz.questions.map((question, index) => (
-                      <div key={question.questionId} className="bg-gray-50 p-4 rounded-lg">
+                      <div
+                        key={question.questionId}
+                        className="bg-gray-50 p-4 rounded-lg"
+                      >
                         <p className="font-medium text-gray-900">
                           {index + 1}. {question.questionText}
                         </p>
                         <div className="mt-2 space-y-1">
-                          {question.answers && question.answers.map((answer) => (
-                            <div key={answer.answerId} className={`flex items-center space-x-2 text-sm ${
-                              answer.correct
-                                ? 'text-green-600'
-                                : 'text-gray-600'
-                            }`}>
-                              <span>
-                                {answer.correct ? '✓' : '○'}
-                              </span>
-                              <span>{answer.answerText}</span>
-                            </div>
-                          ))}
+                          {question.answers &&
+                            question.answers.map((answer) => (
+                              <div
+                                key={answer.answerId}
+                                className={`flex items-center space-x-2 text-sm ${
+                                  answer.correct
+                                    ? "text-green-600"
+                                    : "text-gray-600"
+                                }`}
+                              >
+                                <span>{answer.correct ? "✓" : "○"}</span>
+                                <span>{answer.answerText}</span>
+                              </div>
+                            ))}
                         </div>
                         <div className="mt-2 text-sm text-gray-500">
                           Points: {question.points}
@@ -285,22 +357,19 @@ const QuizViewPage = () => {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex justify-between items-center">
                 <div>
                   <h3 className="font-medium text-blue-800">Time Remaining</h3>
-                  <p className="text-2xl font-bold text-blue-900">{formatTime(timeRemaining)}</p>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {formatTime(timeRemaining)}
+                  </p>
                 </div>
-                <Button
-                  variant="primary"
-                  disabled={isSubmitting}
-                  onClick={() => handleSubmit([])} // Should get answers from form
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit Quiz'}
-                </Button>
               </div>
-              
+
               {submission && showSubmissionForm && quiz && (
                 <Card>
                   <CardContent className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">Quiz Questions</h2>
-                    <QuizSubmissionForm 
+                    <h2 className="text-xl font-semibold mb-4">
+                      Quiz Questions
+                    </h2>
+                    <QuizSubmissionForm
                       quiz={quiz}
                       onSubmit={handleSubmit}
                       isLoading={isSubmitting}
@@ -312,9 +381,13 @@ const QuizViewPage = () => {
           ) : hasSubmitted ? (
             <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-green-800 mb-2">Quiz Submitted</h3>
-              <p className="text-green-700 mb-6">Your submission has been received.</p>
-              
+              <h3 className="text-xl font-bold text-green-800 mb-2">
+                Quiz Submitted
+              </h3>
+              <p className="text-green-700 mb-6">
+                Your submission has been received.
+              </p>
+
               {submission && submission.score !== undefined && (
                 <div className="mb-4">
                   <p className="text-lg font-semibold text-green-800">
@@ -327,20 +400,26 @@ const QuizViewPage = () => {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-xl font-semibold mb-4">Quiz Instructions</h3>
               <ul className="list-disc list-inside space-y-2 text-gray-700 mb-6">
-                <li>You will have {quiz.durationInMinutes || 30} minutes to complete this quiz.</li>
+                <li>
+                  You will have <b>{quiz.durationInMinutes || 30}</b> minutes to
+                  complete this quiz.
+                </li>
                 <li>Once you start, you cannot pause the timer.</li>
                 <li>Answer all questions before submitting.</li>
                 {quiz.showCorrectAnswers && (
-                  <li>You will be able to see the correct answers after submission.</li>
+                  <li>
+                    You will be able to see the correct answers after
+                    submission.
+                  </li>
                 )}
               </ul>
-              
+
               <Button
                 variant="primary"
                 disabled={isSubmitting}
                 onClick={handleStartQuiz}
               >
-                {isSubmitting ? 'Starting Quiz...' : 'Start Quiz'}
+                {isSubmitting ? "Starting Quiz..." : "Start Quiz"}
               </Button>
             </div>
           )}
@@ -350,4 +429,4 @@ const QuizViewPage = () => {
   );
 };
 
-export default QuizViewPage; 
+export default QuizViewPage;

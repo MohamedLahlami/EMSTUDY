@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.*;
 import ma.emsi.emstudy.Exception.QuizTimeExceededException;
 import ma.emsi.emstudy.Exception.ResourceNotFoundException;
-import ma.emsi.emstudy.Repository.EnrollmentRepo;
-import ma.emsi.emstudy.Repository.QuizRepo;
-import ma.emsi.emstudy.Repository.SubmissionRepo;
-import ma.emsi.emstudy.Repository.UserRepo;
+import ma.emsi.emstudy.Repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +17,7 @@ import java.util.Optional;
 public class SubmissionService {
     
     private final SubmissionRepo submissionRepo;
-    private final UserRepo userRepo;
+    private final AnswerRepo answerRepo;
     private final EnrollmentRepo enrollmentRepo;
     private final QuizRepo quizRepo;
 
@@ -60,20 +57,31 @@ public class SubmissionService {
     }
 
     @Transactional
-    public Submission submitSubmission(Long submissionId, List<Answer> answers) {
-        Submission submission = submissionRepo.findById(submissionId).orElseThrow(() -> new ResourceNotFoundException("Submission not found."));
-        if (submission.isSubmitted()){
+    public Submission submitSubmission(Long submissionId, List<Long> answerIds) {
+        Submission submission = submissionRepo.findById(submissionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found."));
+        if (submission.isSubmitted()) {
             throw new IllegalArgumentException("Submission has already been submitted.");
         }
         if (LocalDateTime.now().isAfter(submission.getEndTime())) {
             throw new QuizTimeExceededException("Quiz time has expired.");
         }
-        if (answers.isEmpty()) {
+        if (answerIds.isEmpty()) {
             throw new IllegalArgumentException("No answers provided.");
         }
-        if (answers.stream().anyMatch(answer -> !answer.getQuestion().getQuiz().getItemId().equals(submission.getQuiz().getItemId()) )) {
+
+        List<Answer> answers = answerRepo.findAllById(answerIds);
+        if (answers.size() != answerIds.size()) {
+            throw new ResourceNotFoundException("One or more answers not found.");
+        }
+
+        // Validate that all answers belong to questions in the same quiz
+        if (answers.stream()
+                .anyMatch(answer -> !answer.getQuestion().getQuiz().getItemId()
+                        .equals(submission.getQuiz().getItemId()))) {
             throw new IllegalArgumentException("All answers must belong to the same quiz.");
         }
+
         submission.setAnswers(answers);
         submission.setSubmitted(true);
         float score = calculateScore(answers, submission.getQuiz());
