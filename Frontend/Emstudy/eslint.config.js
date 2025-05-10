@@ -6,8 +6,21 @@ import reactRefreshPlugin from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
 export default [
+  // 1) On précise les patterns à ignorer
+  {
+    ignores: [
+      'eslint.config.js',
+      'postcss.config.js',
+      'tailwind.config.js',
+      'vite.config.ts',
+      'node_modules/**',
+      'build/**',
+      'dist/**'
+    ]
+  },
+
+  // 2) Config JS/JSX classique
   js.configs.recommended,
-  ...tseslint.configs.recommended,
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
@@ -19,9 +32,7 @@ export default [
         ...globals.es2021
       },
       parserOptions: {
-        ecmaFeatures: {
-          jsx: true
-        }
+        ecmaFeatures: { jsx: true }
       }
     },
     plugins: {
@@ -34,17 +45,18 @@ export default [
       'react/prop-types': 'off',
       'react-refresh/only-export-components': 'off',
       'no-unused-vars': ['warn', {
-        'argsIgnorePattern': '^_',
-        'varsIgnorePattern': '^_',
-        'ignoreRestSiblings': true
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        ignoreRestSiblings: true
       }]
     },
     settings: {
-      react: {
-        version: 'detect'
-      }
+      react: { version: 'detect' }
     }
   },
+
+  // 3) Config TS/TSX typé
+  ...tseslint.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -57,10 +69,9 @@ export default [
       },
       parser: tseslint.parser,
       parserOptions: {
-        ecmaFeatures: {
-          jsx: true
-        },
-        project: './tsconfig.json'
+        ecmaFeatures: { jsx: true },
+        project: './tsconfig.json',
+        tsconfigRootDir: __dirname
       }
     },
     plugins: {
@@ -74,17 +85,15 @@ export default [
       'react/prop-types': 'off',
       'react-refresh/only-export-components': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', {
-        'argsIgnorePattern': '^_',
-        'varsIgnorePattern': '^_',
-        'ignoreRestSiblings': true
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        ignoreRestSiblings: true
       }],
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-unused-vars': 'off'
     },
     settings: {
-      react: {
-        version: 'detect'
-      }
+      react: { version: 'detect' }
     }
   }
 ];
