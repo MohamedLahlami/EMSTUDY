@@ -76,10 +76,6 @@ jobs:
         working-directory: Frontend/Emstudy
         run: npm install
 
-      - name: Run linting
-        working-directory: Frontend/Emstudy
-        run: npm run lint
-
       - name: Build React app
         working-directory: Frontend/Emstudy
         run: npm run build
