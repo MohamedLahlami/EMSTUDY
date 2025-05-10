@@ -4,7 +4,7 @@ import Button from "../ui/Button";
 
 interface QuizSubmissionFormProps {
   quiz: Quiz;
-  onSubmit: (answers: Answer[]) => void;
+  onSubmit: (answerIds: number[]) => void;
   isLoading: boolean;
 }
 
@@ -46,30 +46,35 @@ const QuizSubmissionForm: React.FC<QuizSubmissionFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const submissionAnswers: Answer[] = [];
+    // Collect all selected answer IDs into a flat array
+    const answerIds: number[] = [];
 
     // Create answer objects for submission
-    Object.entries(selectedAnswers).forEach(([questionId, answerIds]) => {
-      answerIds.forEach((answerId) => {
-        // Find the actual answer object from the quiz
-        const question = quiz.questions.find(
-          (q) => q.questionId === Number(questionId)
-        );
-        if (question) {
-          const answer = question.answers?.find((a) => a.answerId === answerId);
-          if (answer) {
-            submissionAnswers.push({
-              answerId: answer.answerId,
-              answerText: answer.answerText,
-              question: { questionId: question.questionId } as Question,
-              correct: false, // This will be determined by the server
-            });
-          }
+    if (quiz.questions) {
+      quiz.questions.forEach((question) => {
+        const selectedAnswerIds = selectedAnswers[question.questionId] || [];
+        
+        // If the question is required and no answer is selected, we could show an error
+        if (selectedAnswerIds.length === 0) {
+          // Optional: Show an error for unanswered questions
+          // For now, we'll just skip this question
+          return;
         }
+        
+        // Add each selected answer ID to the flat array
+        selectedAnswerIds.forEach((answerId) => {
+          answerIds.push(answerId);
+        });
       });
-    });
+    }
 
-    onSubmit(submissionAnswers);
+    // Submit answer IDs only if we have some
+    if (answerIds.length > 0) {
+      onSubmit(answerIds);
+    } else {
+      // Optional: Show an error if no answers were selected
+      console.warn("No answers selected for submission");
+    }
   };
 
   if (!quiz || !quiz.questions || quiz.questions.length === 0) {
@@ -147,11 +152,22 @@ const QuizSubmissionForm: React.FC<QuizSubmissionFormProps> = ({
               );
             })}
           </div>
+          
+          {/* Show a warning if no answer is selected */}
+          {!selectedAnswers[question.questionId]?.length && (
+            <div className="mt-2 text-sm text-amber-600">
+              Please select an answer
+            </div>
+          )}
         </div>
       ))}
 
       <div className="mt-6">
-        <Button type="submit" variant="primary" disabled={isLoading}>
+        <Button 
+          type="submit" 
+          variant="primary" 
+          disabled={isLoading || Object.keys(selectedAnswers).length === 0}
+        >
           {isLoading ? "Submitting..." : "Submit Quiz"}
         </Button>
       </div>

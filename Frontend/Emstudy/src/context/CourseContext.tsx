@@ -64,7 +64,22 @@ interface CourseContextType {
     quizId: number,
     questionData: Partial<Question>
   ) => Promise<boolean>;
-  submitQuiz: (quizId: number, answers: Answer[]) => Promise<boolean>;
+  submitQuiz: (quizId: number, answerIds: number[]) => Promise<boolean>;
+
+  // Submission methods
+  getCurrentUserSubmissions: () => Promise<Submission[]>;
+  hasAttemptedQuiz: (quizId: number) => Promise<boolean>;
+
+  // Additional functions used in QuizViewPage
+  getCourseById: (courseId: number) => Promise<Course>;
+  getItemsByCourse: (courseId: number) => Promise<(CourseMaterial | Quiz)[]>;
+  startSubmission: (quizId: number) => Promise<Submission>;
+  submitSubmission: (
+    submissionId: number,
+    answerIds: number[]
+  ) => Promise<Submission>;
+  getSubmissionById: (id: number) => Promise<Submission>;
+  getSubmissionByQuizAndStudent: (quizId: number) => Promise<Submission>;
 
   // Refresh methods
   refreshCourses: () => Promise<void>;
@@ -265,16 +280,8 @@ export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
     clearError();
 
     try {
-      // Ensure teacher is set to current user
-      const course = {
-        ...courseData,
-        teacher: {
-          userId: currentUser.userId,
-          username: currentUser.sub,
-          email: currentUser.email,
-          role: "Teacher",
-        },
-      };
+      // Do not include the teacher object - the backend will automatically use the authenticated user
+      const course = { ...courseData };
 
       await courseApi.createCourse(course as Course);
       await refreshCourses();
@@ -353,20 +360,20 @@ export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
           console.warn("Cannot get course details: User ID is undefined");
           return null;
         }
-        
+
         // Get all student enrollments
         const enrollments = await enrollmentApi.getEnrollmentsByStudent(
           currentUser.userId
         );
-        
+
         // Check if student is enrolled in this course
-        const isEnrolled = enrollments.some(e => e.courseId === courseId);
-        
+        const isEnrolled = enrollments.some((e) => e.courseId === courseId);
+
         if (!isEnrolled) {
           setError("You're not enrolled in this course.");
           return null;
         }
-        
+
         // Fetch the course directly
         return await courseApi.getCourseById(courseId);
       }
@@ -449,7 +456,7 @@ export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
       // Set required fields
       const quiz = {
         ...quizData,
-        itemType: "Quiz",
+        itemType: "Q",
         addDate: new Date().toISOString(),
         questions: quizData.questions || [],
       } as Quiz;
@@ -477,7 +484,7 @@ export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
 
       const flatItems = allItems.flat();
       const quiz = flatItems.find(
-        (item) => item.itemType === "Quiz" && item.itemId === quizId
+        (item) => item.itemType === "Q" && item.itemId === quizId
       ) as Quiz | undefined;
 
       if (!quiz) {
@@ -519,7 +526,7 @@ export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
   // Submit a quiz (student only)
   const submitQuiz = async (
     quizId: number,
-    answers: Answer[]
+    answerIds: number[]
   ): Promise<boolean> => {
     if (!hasRole("Student")) return false;
 
@@ -530,11 +537,19 @@ export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
       const submission = await submissionApi.startSubmission(quizId);
 
       // Submit answers
-      await submissionApi.submitSubmission(submission.submissionId, answers);
+      await submissionApi.submitSubmission(submission.submissionId, answerIds);
       return true;
     } catch (err) {
       return handleError(err, "Failed to submit quiz.");
     }
+  };
+
+  // Create an adapter function for the updated API
+  const getSubmissionByQuizAdapter = async (
+    quizId: number
+  ): Promise<Submission> => {
+    // The API now doesn't need studentId as it's handled in the backend
+    return submissionApi.getSubmissionByQuizAndStudent(quizId);
   };
 
   const contextValue: CourseContextType = {
@@ -564,6 +579,18 @@ export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
     getQuizDetails,
     addQuestion,
     submitQuiz,
+
+    // Submission methods
+    getCurrentUserSubmissions: submissionApi.getCurrentUserSubmissions,
+    hasAttemptedQuiz: submissionApi.hasAttemptedQuiz,
+
+    // Additional functions used in QuizViewPage
+    getCourseById: courseApi.getCourseById,
+    getItemsByCourse: courseItemApi.getItemsByCourse,
+    startSubmission: submissionApi.startSubmission,
+    submitSubmission: submissionApi.submitSubmission,
+    getSubmissionById: submissionApi.getSubmissionById,
+    getSubmissionByQuizAndStudent: getSubmissionByQuizAdapter,
 
     // Refresh method
     refreshCourses,

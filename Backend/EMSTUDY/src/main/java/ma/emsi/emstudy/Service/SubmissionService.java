@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.*;
 import ma.emsi.emstudy.Exception.QuizTimeExceededException;
 import ma.emsi.emstudy.Exception.ResourceNotFoundException;
-import ma.emsi.emstudy.Repository.EnrollmentRepo;
-import ma.emsi.emstudy.Repository.QuizRepo;
-import ma.emsi.emstudy.Repository.SubmissionRepo;
-import ma.emsi.emstudy.Repository.UserRepo;
+import ma.emsi.emstudy.Repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +17,7 @@ import java.util.Optional;
 public class SubmissionService {
     
     private final SubmissionRepo submissionRepo;
-    private final UserRepo userRepo;
+    private final AnswerRepo answerRepo;
     private final EnrollmentRepo enrollmentRepo;
     private final QuizRepo quizRepo;
 
@@ -32,8 +29,8 @@ public class SubmissionService {
         return submissionRepo.findById(id);
     }
 
-    public Submission getSubmissionByQuizAndStudent(Long quizId, Long studentId) {
-        return submissionRepo.findByStudentUserId(studentId).orElseThrow(() -> new ResourceNotFoundException("Submission not found."));
+    public Submission getSubmissionByQuizAndStudent(Long studentId, Long quizId) {
+        return submissionRepo.findByStudentUserIdAndQuizItemId(studentId, quizId).orElseThrow(() -> new ResourceNotFoundException("Submission not found."));
 }
 
     @Transactional
@@ -60,23 +57,34 @@ public class SubmissionService {
     }
 
     @Transactional
-    public Submission submitSubmission(Long submissionId, List<Answer> answers) {
-        Submission submission = submissionRepo.findById(submissionId).orElseThrow(() -> new ResourceNotFoundException("Submission not found."));
-        if (submission.isSubmitted()){
+    public Submission submitSubmission(Long submissionId, List<Long> answerIds) {
+        Submission submission = submissionRepo.findById(submissionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found."));
+        if (submission.isSubmitted()) {
             throw new IllegalArgumentException("Submission has already been submitted.");
         }
         if (LocalDateTime.now().isAfter(submission.getEndTime())) {
             throw new QuizTimeExceededException("Quiz time has expired.");
         }
-        if (answers.isEmpty()) {
+        if (answerIds.isEmpty()) {
             throw new IllegalArgumentException("No answers provided.");
         }
-        if (answers.stream().anyMatch(answer -> !answer.getQuestion().getQuiz().getItemId().equals(submission.getQuiz().getItemId()) )) {
+
+        List<Answer> answers = answerRepo.findAllById(answerIds);
+        if (answers.size() != answerIds.size()) {
+            throw new ResourceNotFoundException("One or more answers not found.");
+        }
+
+        // Validate that all answers belong to questions in the same quiz
+        if (answers.stream()
+                .anyMatch(answer -> !answer.getQuestion().getQuiz().getItemId()
+                        .equals(submission.getQuiz().getItemId()))) {
             throw new IllegalArgumentException("All answers must belong to the same quiz.");
         }
+
         submission.setAnswers(answers);
         submission.setSubmitted(true);
-        float score = calculateScore(answers, submission.getQuiz());
+        double score = calculateScore(answers, submission.getQuiz());
         submission.setScore(score);
         return submissionRepo.save(submission);
     }
@@ -85,15 +93,18 @@ public class SubmissionService {
         submissionRepo.deleteById(id);
     }
 
-    private float calculateScore(List<Answer> studentAnswers, Quiz quiz) {
-        float totalPoints = quiz.getQuestions().stream().mapToInt(Question::getPoints).sum();
-
-        float studentPoints = studentAnswers.stream()
+    private double calculateScore(List<Answer> studentAnswers, Quiz quiz) {
+        double totalPoints = quiz.getQuestions().stream().mapToInt(Question::getPoints).sum();
+        double studentPoints = studentAnswers.stream()
                 .filter(Answer::isCorrect)
-                .map(answer -> answer.getQuestion().getPoints())
-                .mapToInt(Integer::intValue)
+                .map(answer -> answer.getQuestion().getQuestionType().toString().equals("MULTI_SELECT") ? (1D / answer.getQuestion().getAnswers().stream().filter(Answer::isCorrect).count())*answer.getQuestion().getPoints() : answer.getQuestion().getPoints())
+                .mapToDouble(Double::valueOf)
                 .sum();
 
         return (studentPoints / totalPoints) * 100;
+    }
+
+    public List<Submission> getSubmissionsByStudent(Long userId) {
+        return submissionRepo.findByStudentUserId(userId);
     }
 }

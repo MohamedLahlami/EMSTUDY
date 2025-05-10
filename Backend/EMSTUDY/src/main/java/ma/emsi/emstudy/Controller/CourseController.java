@@ -45,15 +45,12 @@ public class CourseController {
         if (userId == null) {
             return new ResponseEntity<>("User not authenticated", HttpStatus.UNAUTHORIZED);
         }
-        return userService.findById(userId).map(user -> {
-            if (user.getRole().equals("Teacher")) {
-                Teacher teacher = (Teacher) user;
-                course.setTeacher(teacher);
-                return new ResponseEntity<>(courseService.addCourse(course), HttpStatus.CREATED);
-            } else {
-                return new ResponseEntity<>("Only teachers can create courses", HttpStatus.FORBIDDEN);
-            }
-        }).orElse(new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND));
+        Teacher teacher = teacherService.getTeacher(userId);
+        if (teacher == null) {
+            return new ResponseEntity<>("User is not a teacher", HttpStatus.FORBIDDEN);
+        }
+        course.setTeacher(teacher);
+        return new ResponseEntity<>(courseService.addCourse(course), HttpStatus.CREATED);
     }
 
     @Operation(

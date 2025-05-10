@@ -21,6 +21,8 @@ import CoursesPage from "./pages/course/CoursesPage";
 import CreateCoursePage from "./pages/course/CreateCoursePage";
 import CourseDetailsPage from "./pages/course/CourseDetailsPage";
 import QuizViewPage from "./pages/course/QuizViewPage";
+import QuizEditPage from "./pages/course/QuizEditPage";
+import QuizSubmissionsPage from "./pages/course/QuizSubmissionsPage";
 
 function App() {
   return (
@@ -49,7 +51,14 @@ function App() {
             {/* Teacher-only Routes */}
             <Route element={<ProtectedRoute requiredRole="Teacher" />}>
               <Route path="/courses/create" element={<CreateCoursePage />} />
-              {/* Add other teacher-only routes here */}
+              <Route 
+                path="/courses/:courseId/quizzes/:quizId/edit" 
+                element={<QuizEditPage />} 
+              />
+              <Route 
+                path="/courses/:courseId/quizzes/:quizId/submissions" 
+                element={<QuizSubmissionsPage />} 
+              />
             </Route>
 
             {/* Student-only Routes */}
