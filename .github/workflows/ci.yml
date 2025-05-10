@@ -29,7 +29,9 @@ jobs:
             ${{ runner.os }}-m2-
 
       - name: Maven clean & verify
-        run: mvn -B clean verify
+        run: |
+          cd Backend/EMSTUDY
+          mvn -B clean verify
 
   build-frontend:
     name: Build & Test Frontend
@@ -47,15 +49,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd frontend
+          cd Frontend/Emstudy
           npm ci
 
       - name: Run tests
         run: |
-          cd frontend
+          cd Frontend/Emstudy
           npm test -- --watchAll=false
 
       - name: Build React app
         run: |
-          cd frontend
+          cd Frontend/Emstudy
           npm run build
