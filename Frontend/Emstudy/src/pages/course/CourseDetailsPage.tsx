@@ -1,13 +1,21 @@
 import { useState, useEffect } from "react";
 import { useParams, Navigate, useNavigate } from "react-router-dom";
-import { Book, FileText, Calendar, Users, Clock, Plus } from "lucide-react";
+import {
+  Book,
+  FileText,
+  Calendar,
+  Users,
+  Clock,
+  Plus,
+  CheckCircle,
+} from "lucide-react";
 import { format } from "date-fns";
 import PageLayout from "../../components/layout/PageLayout";
 import { useCourses } from "../../context/CourseContext";
 import { useAuth } from "../../context/AuthContext";
 import { Card, CardContent } from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
-import { Course, CourseMaterial, Quiz } from "../../types";
+import { Course, CourseMaterial, Quiz, Submission } from "../../types";
 import api from "../../api/apiClient";
 import QuizManager from "../../components/quiz/QuizManager";
 
@@ -22,10 +30,20 @@ const CourseDetailsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [showAddMaterial, setShowAddMaterial] = useState(false);
   const [showCreateQuiz, setShowCreateQuiz] = useState(false);
+  const [quizSubmissions, setQuizSubmissions] = useState<{
+    [quizId: number]: Submission | null;
+  }>({});
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
   const { currentUser } = useAuth();
-  const { getCourseDetails, getCourseItems, createMaterial, createQuiz } =
-    useCourses();
+  const {
+    getCourseDetails,
+    getCourseItems,
+    createMaterial,
+    createQuiz,
+    getCurrentUserSubmissions,
+    hasAttemptedQuiz,
+  } = useCourses();
 
   // Add state for selected image to view in modal
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -144,6 +162,29 @@ const CourseDetailsPage = () => {
 
         setMaterials(materialsData);
         setQuizzes(quizzesData);
+
+        // If user is a student, load their quiz submissions
+        if (currentUser?.role === "Student" && quizzesData.length > 0) {
+          setLoadingSubmissions(true);
+          try {
+            const submissions = await getCurrentUserSubmissions();
+            const submissionsMap: { [quizId: number]: Submission | null } = {};
+
+            // Map submissions to quiz IDs
+            submissions.forEach((submission) => {
+              if (submission.quiz && submission.quiz.itemId) {
+                submissionsMap[submission.quiz.itemId] = submission;
+              }
+            });
+
+            setQuizSubmissions(submissionsMap);
+          } catch (err) {
+            console.error("Error loading quiz submissions:", err);
+          } finally {
+            setLoadingSubmissions(false);
+          }
+        }
+
         setLoading(false);
       } catch (err) {
         console.error("Error loading course data:", err);
@@ -153,7 +194,13 @@ const CourseDetailsPage = () => {
     };
 
     loadData();
-  }, [courseId, getCourseDetails, getCourseItems]);
+  }, [
+    courseId,
+    getCourseDetails,
+    getCourseItems,
+    currentUser,
+    getCurrentUserSubmissions,
+  ]);
 
   if (!courseId) {
     return <Navigate to="/courses" />;
@@ -225,6 +272,76 @@ const CourseDetailsPage = () => {
     navigate(`/courses/${courseId}/quizzes/${quiz.itemId}`);
   };
 
+  // Student quiz cards now showing score instead of Start button when quiz is completed
+  const renderStudentQuizList = () => {
+    if (quizzes.length === 0) {
+      return (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <Book className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No quizzes yet
+          </h3>
+          <p className="text-gray-500">
+            Your teacher has not created any quizzes yet.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {quizzes.map((quiz) => {
+          const submission = quizSubmissions[quiz.itemId];
+          const hasSubmitted = submission?.submitted === true;
+
+          return (
+            <Card key={quiz.itemId}>
+              <CardContent className="p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0 pt-1">
+                    <FileText className="h-6 w-6 text-indigo-500" />
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <h3 className="text-lg font-medium text-gray-900">
+                      {quiz.title}
+                    </h3>
+                    <div className="mt-2 flex items-center text-sm text-gray-500">
+                      <Clock className="h-4 w-4 mr-1" />
+                      <span>Duration: {quiz.durationInMinutes} minutes</span>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    {hasSubmitted ? (
+                      <div className="flex flex-col items-end">
+                        <div className="flex items-center text-green-600 mb-1">
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          <span className="text-sm font-medium">Completed</span>
+                        </div>
+                        {submission.score !== undefined && (
+                          <div className="text-lg font-semibold text-gray-800">
+                            Score: {submission.score.toFixed(1)}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewQuiz(quiz)}
+                      >
+                        Start
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <PageLayout>
       <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
@@ -294,27 +411,39 @@ const CourseDetailsPage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center mb-2">
-                      <Users className="h-5 w-5 text-blue-500 mr-2" />
-                      <h3 className="text-lg font-medium">Enrolled Students</h3>
-                    </div>
-                    <p className="text-gray-600">
-                      {course.enrollments?.length || 0} students
-                    </p>
-                  </CardContent>
+                  <div
+                    className="cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => setActiveTab("students")}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center mb-2">
+                        <Users className="h-5 w-5 text-blue-500 mr-2" />
+                        <h3 className="text-lg font-medium">
+                          Enrolled Students
+                        </h3>
+                      </div>
+                      <p className="text-gray-600">
+                        {course.enrollments?.length || 0} students
+                      </p>
+                    </CardContent>
+                  </div>
                 </Card>
 
                 <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center mb-2">
-                      <Book className="h-5 w-5 text-blue-500 mr-2" />
-                      <h3 className="text-lg font-medium">Course Content</h3>
-                    </div>
-                    <p className="text-gray-600">
-                      {materials.length} materials, {quizzes.length} quizzes
-                    </p>
-                  </CardContent>
+                  <div
+                    className="cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => setActiveTab("materials")}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center mb-2">
+                        <Book className="h-5 w-5 text-blue-500 mr-2" />
+                        <h3 className="text-lg font-medium">Course Content</h3>
+                      </div>
+                      <p className="text-gray-600">
+                        {materials.length} materials, {quizzes.length} quizzes
+                      </p>
+                    </CardContent>
+                  </div>
                 </Card>
               </div>
             </div>
@@ -529,56 +658,21 @@ const CourseDetailsPage = () => {
                 // Teacher view - use the new QuizManager component
                 <QuizManager courseId={Number(courseId)} />
               ) : (
-                // Student view - keep existing code
+                // Student view - use the new renderStudentQuizList function
                 <>
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-semibold">Quizzes</h2>
                   </div>
 
-                  {quizzes.length > 0 ? (
-                    <div className="space-y-4">
-                      {quizzes.map((quiz) => (
-                        <Card key={quiz.itemId}>
-                          <CardContent className="p-4">
-                            <div className="flex items-start">
-                              <div className="flex-shrink-0 pt-1">
-                                <FileText className="h-6 w-6 text-indigo-500" />
-                              </div>
-                              <div className="ml-4 flex-1">
-                                <h3 className="text-lg font-medium text-gray-900">
-                                  {quiz.title}
-                                </h3>
-                                <div className="mt-2 flex items-center text-sm text-gray-500">
-                                  <Clock className="h-4 w-4 mr-1" />
-                                  <span>
-                                    Duration: {quiz.durationInMinutes} minutes
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="ml-4">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleViewQuiz(quiz)}
-                                >
-                                  Start
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 bg-gray-50 rounded-lg">
-                      <Book className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No quizzes yet
-                      </h3>
-                      <p className="text-gray-500">
-                        Your teacher has not created any quizzes yet.
+                  {loadingSubmissions ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+                      <p className="mt-2 text-sm text-gray-500">
+                        Loading quiz records...
                       </p>
                     </div>
+                  ) : (
+                    renderStudentQuizList()
                   )}
                 </>
               )}

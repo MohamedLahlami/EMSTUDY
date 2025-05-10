@@ -28,6 +28,7 @@ public class Question {
 
     private Integer points;
 
+    @Enumerated(EnumType.STRING)
     private QuestionType questionType;
 
     private String Explanation;

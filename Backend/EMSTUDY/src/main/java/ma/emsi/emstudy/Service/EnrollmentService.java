@@ -2,6 +2,7 @@ package ma.emsi.emstudy.Service;
 
 import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
+import ma.emsi.emstudy.DTO.EnrollmentDTO;
 import ma.emsi.emstudy.Entity.Course;
 import ma.emsi.emstudy.Entity.Enrollment;
 import ma.emsi.emstudy.Entity.Student;

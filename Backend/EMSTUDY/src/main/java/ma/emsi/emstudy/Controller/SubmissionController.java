@@ -34,10 +34,24 @@ public class SubmissionController {
             @ApiResponse(responseCode = "200", description = "List of submissions retrieved successfully")
         }
     )
-    @GetMapping
+    @GetMapping("/all")
     public ResponseEntity<List<Submission>> getAllSubmissions() {
         return ResponseEntity.ok(submissionService.getAllSubmissions());
     }
+
+    @Operation(
+            summary = "Get current user's submissions",
+            description = "Retrieve all submissions for the currently authenticated user",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "List of user's submissions retrieved successfully")
+            }
+    )
+    @GetMapping
+    public ResponseEntity<List<Submission>> getCurrentUserSubmissions(@RequestAttribute("userId") Long studentId) {
+        Student student = studentService.getStudent(studentId);
+        return ResponseEntity.ok(submissionService.getSubmissionsByStudent(student.getUserId()));
+    }
+
 
     @Operation(
         summary = "Get submission by ID",
@@ -56,20 +70,20 @@ public class SubmissionController {
     }
 
     @Operation(
-        summary = "Get submission by quiz and student",
+        summary = "Get the current student's submission by quiz",
         description = "Retrieve a submission for a specific quiz and student",
         responses = {
             @ApiResponse(responseCode = "200", description = "Submission found and returned"),
             @ApiResponse(responseCode = "404", description = "Submission not found")
         }
     )
-    @GetMapping("/student/{studentId}/quiz/{quizId}")
+    @GetMapping("/quiz/{quizId}")
     public ResponseEntity<Submission> getSubmissionByQuizAndStudent(
             @Parameter(description = "ID of the quiz") @PathVariable Long quizId,
-            @Parameter(description = "ID of the student") @PathVariable Long studentId) {
-        Submission submission = submissionService.getSubmissionByQuizAndStudent(quizId, studentId);
+            @RequestAttribute("userId") Long studentId) {
+        Submission submission = submissionService.getSubmissionByQuizAndStudent(studentId, quizId);
         if (submission == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(submission);
     }

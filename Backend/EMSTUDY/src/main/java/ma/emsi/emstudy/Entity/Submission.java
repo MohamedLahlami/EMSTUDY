@@ -22,7 +22,7 @@ public class Submission {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private boolean submitted;
-    private float score;
+    private double score;
 
     @ManyToMany
     private List<Answer> answers = new ArrayList<>();

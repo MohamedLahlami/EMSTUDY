@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { format } from "date-fns";
-import { FileText, Clock, ArrowLeft, Users, CheckCircle } from "lucide-react";
+import {
+  FileText,
+  Clock,
+  ArrowLeft,
+  Users,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react";
 import PageLayout from "../../components/layout/PageLayout";
 import { useAuth } from "../../context/AuthContext";
 import { useCourses } from "../../context/CourseContext";
@@ -21,6 +28,7 @@ const QuizViewPage = () => {
     submitSubmission,
     getSubmissionById,
     getSubmissionByQuizAndStudent,
+    hasAttemptedQuiz,
   } = useCourses();
 
   const [course, setCourse] = useState<Course | null>(null);
@@ -35,6 +43,7 @@ const QuizViewPage = () => {
   > | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [alreadyAttempted, setAlreadyAttempted] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -78,43 +87,69 @@ const QuizViewPage = () => {
           currentUser.userId
         ) {
           try {
-            const existingSubmission = await getSubmissionByQuizAndStudent(
-              Number(quizId),
-              currentUser.userId
-            );
+            // Check if user has already attempted this quiz
+            const hasAttempted = await hasAttemptedQuiz(Number(quizId));
+            setAlreadyAttempted(hasAttempted);
 
-            if (existingSubmission) {
-              setSubmission(existingSubmission);
-              // If submission exists and was already submitted, show completed state
-              if (existingSubmission.submitted) {
-                setQuizStarted(false);
+            if (hasAttempted) {
+              try {
+                // Try to get the existing submission details
+                const existingSubmission = await getSubmissionByQuizAndStudent(
+                  Number(quizId)
+                );
+
+                if (existingSubmission) {
+                  setSubmission(existingSubmission);
+                }
+              } catch (err) {
+                console.log("Could not fetch submission details");
               }
-              // If submission exists but was not submitted (was started but interrupted)
-              else {
-                setQuizStarted(true);
-                setShowSubmissionForm(true);
+            } else {
+              // If not attempted, check if there's an in-progress submission
+              try {
+                const existingSubmission = await getSubmissionByQuizAndStudent(
+                  Number(quizId)
+                );
 
-                // Calculate remaining time
-                if (existingSubmission.endTime && quizData.durationInMinutes) {
-                  const endTime = new Date(
-                    existingSubmission.endTime
-                  ).getTime();
-                  const now = new Date().getTime();
-                  const remainingMs = Math.max(0, endTime - now);
-                  const remainingSec = Math.floor(remainingMs / 1000);
+                if (existingSubmission) {
+                  setSubmission(existingSubmission);
+                  // If submission exists and was already submitted, show completed state
+                  if (existingSubmission.submitted) {
+                    setQuizStarted(false);
+                  }
+                  // If submission exists but was not submitted (was started but interrupted)
+                  else {
+                    setQuizStarted(true);
+                    setShowSubmissionForm(true);
 
-                  if (remainingSec > 0) {
-                    setTimeRemaining(remainingSec);
-                  } else {
-                    // Time already expired
-                    setTimeRemaining(0);
+                    // Calculate remaining time
+                    if (
+                      existingSubmission.endTime &&
+                      quizData.durationInMinutes
+                    ) {
+                      const endTime = new Date(
+                        existingSubmission.endTime
+                      ).getTime();
+                      const now = new Date().getTime();
+                      const remainingMs = Math.max(0, endTime - now);
+                      const remainingSec = Math.floor(remainingMs / 1000);
+
+                      if (remainingSec > 0) {
+                        setTimeRemaining(remainingSec);
+                      } else {
+                        // Time already expired
+                        setTimeRemaining(0);
+                      }
+                    }
                   }
                 }
+              } catch (err) {
+                // No submission found, which is fine
+                console.log("No existing submission found");
               }
             }
           } catch (err) {
-            // No submission found, which is fine
-            console.log("No existing submission found");
+            console.error("Error checking quiz attempts:", err);
           }
         }
 
@@ -134,6 +169,7 @@ const QuizViewPage = () => {
     getItemsByCourse,
     currentUser,
     getSubmissionByQuizAndStudent,
+    hasAttemptedQuiz,
   ]);
 
   // Start quiz timer when quiz is started
@@ -204,6 +240,14 @@ const QuizViewPage = () => {
     if (!quiz || !quiz.itemId) return;
 
     try {
+      // Double-check if the quiz has already been attempted
+      const hasAttempted = await hasAttemptedQuiz(quiz.itemId);
+      if (hasAttempted) {
+        setAlreadyAttempted(true);
+        setError("You have already taken this quiz and cannot retake it.");
+        return;
+      }
+
       setIsSubmitting(true);
       setError(null);
       const newSubmission = await startSubmission(quiz.itemId);
@@ -396,6 +440,24 @@ const QuizViewPage = () => {
                 </div>
               )}
             </div>
+          ) : alreadyAttempted ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
+              <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-amber-800 mb-2">
+                Quiz Already Completed
+              </h3>
+              <p className="text-amber-700 mb-2">
+                You have already taken this quiz. Each student can only take a
+                quiz once.
+              </p>
+              {submission && submission.score !== undefined && (
+                <div className="mt-4">
+                  <p className="text-lg font-semibold text-amber-800">
+                    Your score: {submission.score.toFixed(1)}
+                  </p>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-xl font-semibold mb-4">Quiz Instructions</h3>
@@ -406,6 +468,9 @@ const QuizViewPage = () => {
                 </li>
                 <li>Once you start, you cannot pause the timer.</li>
                 <li>Answer all questions before submitting.</li>
+                <li>
+                  <b>Important:</b> You can only take this quiz once.
+                </li>
                 {quiz.showCorrectAnswers && (
                   <li>
                     You will be able to see the correct answers after

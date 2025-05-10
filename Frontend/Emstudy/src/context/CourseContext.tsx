@@ -66,6 +66,10 @@ interface CourseContextType {
   ) => Promise<boolean>;
   submitQuiz: (quizId: number, answerIds: number[]) => Promise<boolean>;
 
+  // Submission methods
+  getCurrentUserSubmissions: () => Promise<Submission[]>;
+  hasAttemptedQuiz: (quizId: number) => Promise<boolean>;
+
   // Additional functions used in QuizViewPage
   getCourseById: (courseId: number) => Promise<Course>;
   getItemsByCourse: (courseId: number) => Promise<(CourseMaterial | Quiz)[]>;
@@ -75,10 +79,7 @@ interface CourseContextType {
     answerIds: number[]
   ) => Promise<Submission>;
   getSubmissionById: (id: number) => Promise<Submission>;
-  getSubmissionByQuizAndStudent: (
-    quizId: number,
-    studentId: number
-  ) => Promise<Submission>;
+  getSubmissionByQuizAndStudent: (quizId: number) => Promise<Submission>;
 
   // Refresh methods
   refreshCourses: () => Promise<void>;
@@ -279,16 +280,8 @@ export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
     clearError();
 
     try {
-      // Ensure teacher is set to current user
-      const course = {
-        ...courseData,
-        teacher: {
-          userId: currentUser.userId,
-          username: currentUser.sub,
-          email: currentUser.email,
-          role: "Teacher",
-        },
-      };
+      // Do not include the teacher object - the backend will automatically use the authenticated user
+      const course = { ...courseData };
 
       await courseApi.createCourse(course as Course);
       await refreshCourses();
@@ -551,6 +544,14 @@ export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
     }
   };
 
+  // Create an adapter function for the updated API
+  const getSubmissionByQuizAdapter = async (
+    quizId: number
+  ): Promise<Submission> => {
+    // The API now doesn't need studentId as it's handled in the backend
+    return submissionApi.getSubmissionByQuizAndStudent(quizId);
+  };
+
   const contextValue: CourseContextType = {
     myCourses,
     loading,
@@ -579,13 +580,17 @@ export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
     addQuestion,
     submitQuiz,
 
+    // Submission methods
+    getCurrentUserSubmissions: submissionApi.getCurrentUserSubmissions,
+    hasAttemptedQuiz: submissionApi.hasAttemptedQuiz,
+
     // Additional functions used in QuizViewPage
     getCourseById: courseApi.getCourseById,
     getItemsByCourse: courseItemApi.getItemsByCourse,
     startSubmission: submissionApi.startSubmission,
     submitSubmission: submissionApi.submitSubmission,
     getSubmissionById: submissionApi.getSubmissionById,
-    getSubmissionByQuizAndStudent: submissionApi.getSubmissionByQuizAndStudent,
+    getSubmissionByQuizAndStudent: getSubmissionByQuizAdapter,
 
     // Refresh method
     refreshCourses,

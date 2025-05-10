@@ -29,8 +29,8 @@ public class SubmissionService {
         return submissionRepo.findById(id);
     }
 
-    public Submission getSubmissionByQuizAndStudent(Long quizId, Long studentId) {
-        return submissionRepo.findByStudentUserId(studentId).orElseThrow(() -> new ResourceNotFoundException("Submission not found."));
+    public Submission getSubmissionByQuizAndStudent(Long studentId, Long quizId) {
+        return submissionRepo.findByStudentUserIdAndQuizItemId(studentId, quizId).orElseThrow(() -> new ResourceNotFoundException("Submission not found."));
 }
 
     @Transactional
@@ -84,7 +84,7 @@ public class SubmissionService {
 
         submission.setAnswers(answers);
         submission.setSubmitted(true);
-        float score = calculateScore(answers, submission.getQuiz());
+        double score = calculateScore(answers, submission.getQuiz());
         submission.setScore(score);
         return submissionRepo.save(submission);
     }
@@ -93,15 +93,18 @@ public class SubmissionService {
         submissionRepo.deleteById(id);
     }
 
-    private float calculateScore(List<Answer> studentAnswers, Quiz quiz) {
-        float totalPoints = quiz.getQuestions().stream().mapToInt(Question::getPoints).sum();
-
-        float studentPoints = studentAnswers.stream()
+    private double calculateScore(List<Answer> studentAnswers, Quiz quiz) {
+        double totalPoints = quiz.getQuestions().stream().mapToInt(Question::getPoints).sum();
+        double studentPoints = studentAnswers.stream()
                 .filter(Answer::isCorrect)
-                .map(answer -> answer.getQuestion().getPoints())
-                .mapToInt(Integer::intValue)
+                .map(answer -> answer.getQuestion().getQuestionType().toString().equals("MULTI_SELECT") ? (1D / answer.getQuestion().getAnswers().stream().filter(Answer::isCorrect).count())*answer.getQuestion().getPoints() : answer.getQuestion().getPoints())
+                .mapToDouble(Double::valueOf)
                 .sum();
 
         return (studentPoints / totalPoints) * 100;
+    }
+
+    public List<Submission> getSubmissionsByStudent(Long userId) {
+        return submissionRepo.findByStudentUserId(userId);
     }
 }
