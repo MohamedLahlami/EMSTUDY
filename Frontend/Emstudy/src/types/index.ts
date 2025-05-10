@@ -71,10 +71,12 @@ export interface Quiz extends CourseItem {
 
 export interface Enrollment {
   enrollmentId: number;
+  courseId: number;
+  studentId: number;
   enrollmentDate: string;
   completionDate?: string;
-  student: Student;
-  course: Course;
+  student?: Student;
+  course?: Course;
 }
 
 export interface CompletedCourseItem {

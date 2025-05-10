@@ -47,22 +47,14 @@ const Navbar: React.FC = () => {
               >
                 My Courses
               </Link>
-              {currentUser.role === "student" && (
-                <Link
-                  to="/enroll"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  Enroll
-                </Link>
-              )}
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             <div className="ml-3 relative flex items-center">
               <p className="text-sm font-medium text-gray-700 mr-4">
-                {currentUser.name}
+                {currentUser.username || currentUser.email || "User"}
                 <span className="text-xs text-gray-500 ml-1">
-                  ({currentUser.role})
+                  ({currentUser.role || "Role"})
                 </span>
               </p>
               <Button
@@ -108,28 +100,21 @@ const Navbar: React.FC = () => {
             >
               My Courses
             </Link>
-            {currentUser.role === "student" && (
-              <Link
-                to="/enroll"
-                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Enroll
-              </Link>
-            )}
           </div>
           <div className="pt-4 pb-3 border-t border-gray-200">
             <div className="flex items-center px-4">
               <div className="flex-shrink-0">
                 <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
                   <span className="text-gray-600 font-medium">
-                    {currentUser.name.charAt(0)}
+                    {currentUser.username
+                      ? currentUser.username.charAt(0)
+                      : "?"}
                   </span>
                 </div>
               </div>
               <div className="ml-3">
                 <div className="text-base font-medium text-gray-800">
-                  {currentUser.name}
+                  {currentUser.username || currentUser.email || "User"}
                 </div>
                 <div className="text-sm font-medium text-gray-500">
                   {currentUser.email}

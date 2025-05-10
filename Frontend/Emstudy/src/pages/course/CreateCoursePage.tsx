@@ -8,7 +8,7 @@ const CreateCoursePage: React.FC = () => {
   const { currentUser } = useAuth();
   
   // Only teachers can create courses
-  if (!currentUser || currentUser.role !== 'teacher') {
+  if (!currentUser || currentUser.role !== 'Teacher') {
     return <Navigate to="/dashboard" />;
   }
   

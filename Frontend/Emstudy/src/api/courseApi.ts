@@ -24,4 +24,4 @@ export const updateCourse = async (course: Course): Promise<Course> => {
 export const deleteCourse = async (courseId: number): Promise<any> => {
   const res = await api.delete(`/courses/${courseId}`);
   return res.data;
-}; 
+};

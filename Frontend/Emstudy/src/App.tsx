@@ -1,22 +1,26 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { CourseProvider } from './context/CourseContext';
-import ProtectedRoute from './routes/ProtectedRoute';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { CourseProvider } from "./context/CourseContext";
+import ProtectedRoute from "./routes/ProtectedRoute";
 
 // Auth Pages
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
+import LoginPage from "./pages/auth/LoginPage";
+import RegisterPage from "./pages/auth/RegisterPage";
 
 // Dashboard Pages
-import DashboardPage from './pages/dashboard/DashboardPage';
+import DashboardPage from "./pages/dashboard/DashboardPage";
 
 // Course Pages
-import CoursesPage from './pages/course/CoursesPage';
-import CreateCoursePage from './pages/course/CreateCoursePage';
-import EnrollPage from './pages/course/EnrollPage';
-import CourseDetailsPage from './pages/course/CourseDetailsPage';
-import AssignmentViewPage from './pages/course/AssignmentViewPage';
+import CoursesPage from "./pages/course/CoursesPage";
+import CreateCoursePage from "./pages/course/CreateCoursePage";
+import CourseDetailsPage from "./pages/course/CourseDetailsPage";
+import QuizViewPage from "./pages/course/QuizViewPage";
 
 function App() {
   return (
@@ -24,29 +28,36 @@ function App() {
       <CourseProvider>
         <Router>
           <Routes>
-            {/* Auth Routes */}
+            {/* Public Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            
-            {/* Protected Routes */}
+
+            {/* Protected Routes (any authenticated user) */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/courses" element={<CoursesPage />} />
-              <Route path="/courses/:courseId" element={<CourseDetailsPage />} />
-              <Route path="/courses/:courseId/assignments/:assignmentId" element={<AssignmentViewPage />} />
+              <Route
+                path="/courses/:courseId"
+                element={<CourseDetailsPage />}
+              />
+              <Route
+                path="/courses/:courseId/quizzes/:quizId"
+                element={<QuizViewPage />}
+              />
             </Route>
-            
+
             {/* Teacher-only Routes */}
             <Route element={<ProtectedRoute requiredRole="Teacher" />}>
               <Route path="/courses/create" element={<CreateCoursePage />} />
+              {/* Add other teacher-only routes here */}
             </Route>
-            
+
             {/* Student-only Routes */}
             <Route element={<ProtectedRoute requiredRole="Student" />}>
-              <Route path="/enroll" element={<EnrollPage />} />
+              {/* Add student-only routes here if needed in the future */}
             </Route>
-            
-            {/* Redirect to login if user is not authenticated */}
+
+            {/* Default routes */}
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="*" element={<Navigate to="/dashboard" />} />
           </Routes>

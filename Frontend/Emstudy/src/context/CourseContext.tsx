@@ -4,12 +4,15 @@ import React, {
   useState,
   useEffect,
   ReactNode,
+  useCallback,
 } from "react";
 import * as courseApi from "../api/courseApi";
 import * as enrollmentApi from "../api/enrollmentApi";
 import * as courseItemApi from "../api/courseItemApi";
 import * as materialApi from "../api/materialApi";
 import * as quizApi from "../api/quizApi";
+import * as questionApi from "../api/questionApi";
+import * as answerApi from "../api/answerApi";
 import * as submissionApi from "../api/submissionApi";
 import * as completedItemApi from "../api/completedItemApi";
 import {
@@ -25,32 +28,46 @@ import {
 import { useAuth } from "./AuthContext";
 
 interface CourseContextType {
-  courses: Course[];
+  // Core data
+  myCourses: Course[];
   loading: boolean;
   error: string | null;
-  getAllCourses: () => Promise<void>;
-  getCourseById: (id: number) => Promise<Course | undefined>;
-  createCourse: (course: Course) => Promise<void>;
-  enrollInCourse: (joinCode: string) => Promise<void>;
-  getItemsByCourse: (courseId: number) => Promise<(CourseMaterial | Quiz)[]>;
-  createMaterial: (
-    title: string,
+  clearError: () => void;
+
+  // Student course actions
+  enrollInCourse: (joinCode: string) => Promise<boolean>;
+  getEnrollments: () => Promise<Enrollment[]>;
+  markItemAsCompleted: (itemId: number) => Promise<boolean>;
+  getCompletedItems: (courseId: number) => Promise<CompletedCourseItem[]>;
+
+  // Teacher course actions
+  createCourse: (courseData: Partial<Course>) => Promise<boolean>;
+  updateCourse: (
     courseId: number,
+    courseData: Partial<Course>
+  ) => Promise<boolean>;
+  deleteCourse: (courseId: number) => Promise<boolean>;
+
+  // Course content actions
+  getCourseDetails: (courseId: number) => Promise<Course | null>;
+  getCourseItems: (courseId: number) => Promise<(CourseMaterial | Quiz)[]>;
+  createMaterial: (
+    courseId: number,
+    title: string,
     file: File
-  ) => Promise<void>;
-  createQuiz: (courseId: number, quiz: Quiz) => Promise<void>;
-  addQuestion: (quizId: number, question: Question) => Promise<void>;
-  startSubmission: (quizId: number) => Promise<Submission>;
-  submitSubmission: (
-    submissionId: number,
-    answers: Answer[]
-  ) => Promise<Submission>;
-  getSubmissionById: (id: number) => Promise<Submission>;
-  markItemAsCompleted: (itemId: number) => Promise<void>;
-  getCompletedItemsByCourse: (
-    courseId: number
-  ) => Promise<CompletedCourseItem[]>;
-  removeCompletedItem: (completedItemId: number) => Promise<void>;
+  ) => Promise<boolean>;
+  createQuiz: (courseId: number, quizData: Partial<Quiz>) => Promise<boolean>;
+
+  // Quiz actions
+  getQuizDetails: (quizId: number) => Promise<Quiz | null>;
+  addQuestion: (
+    quizId: number,
+    questionData: Partial<Question>
+  ) => Promise<boolean>;
+  submitQuiz: (quizId: number, answers: Answer[]) => Promise<boolean>;
+
+  // Refresh methods
+  refreshCourses: () => Promise<void>;
 }
 
 const CourseContext = createContext<CourseContextType | undefined>(undefined);
@@ -68,60 +85,121 @@ interface CourseProviderProps {
 }
 
 export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { currentUser, isAuthenticated, hasRole } = useAuth();
+  const [myCourses, setMyCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { currentUser, isAuthenticated } = useAuth();
 
-  const getAllCourses = async () => {
-    if (!isAuthenticated) return;
+  // Utility function to handle errors
+  const handleError = (err: any, message: string) => {
+    console.error(message, err);
+    setError(
+      typeof err?.response?.data?.error === "string"
+        ? err.response.data.error
+        : message
+    );
+    return false;
+  };
 
-    setLoading(true);
-    setError(null);
+  // Clear error
+  const clearError = () => setError(null);
+
+  // FETCH COURSES BASED ON ROLE
+  const fetchCourses = useCallback(async (): Promise<Course[]> => {
+    if (!currentUser || !isAuthenticated) return [];
+
     try {
-      const data = await courseApi.getAllCourses();
-      setCourses(data);
+      // For Student: Get enrolled courses from enrollments
+      if (hasRole("Student")) {
+        if (!currentUser.userId) {
+          console.warn("Cannot fetch enrollments: User ID is undefined");
+          return [];
+        }
+
+        // Get enrollments for the student
+        const enrollments = await enrollmentApi.getEnrollmentsByStudent(
+          currentUser.userId
+        );
+
+        // Fetch each course by ID from the enrollments
+        const coursesPromises = enrollments.map((enrollment) =>
+          courseApi.getCourseById(enrollment.courseId).catch((error) => {
+            console.error(
+              `Failed to fetch course ${enrollment.courseId}:`,
+              error
+            );
+            return null; // Return null for failed requests
+          })
+        );
+
+        // Wait for all course requests to complete and filter out any failed requests
+        const courses = (await Promise.all(coursesPromises)).filter(
+          (course) => course !== null
+        ) as Course[];
+        return courses;
+      }
+      // For Teacher: Get courses where teacher.userId matches currentUser.userId
+      else if (hasRole("Teacher")) {
+        if (!currentUser.userId) {
+          console.warn("Cannot fetch courses: User ID is undefined");
+          return [];
+        }
+        const allCourses = await courseApi.getAllCourses();
+        return allCourses.filter(
+          (course) =>
+            course.teacher && course.teacher.userId === currentUser.userId
+        );
+      }
+
+      return [];
     } catch (err) {
       console.error("Failed to fetch courses:", err);
-      setError("Failed to load courses. Please try again later.");
+      setError("Could not load your courses. Please try again.");
+      return [];
+    }
+  }, [currentUser, isAuthenticated, hasRole]);
+
+  // Refresh courses
+  const refreshCourses = async (): Promise<void> => {
+    setLoading(true);
+    clearError();
+
+    try {
+      const courses = await fetchCourses();
+      setMyCourses(courses);
+    } catch (err) {
+      console.error("Error refreshing courses:", err);
+      setError("Failed to refresh courses.");
     } finally {
       setLoading(false);
     }
   };
 
-  const getCourseById = async (id: number) => {
-    try {
-      return await courseApi.getCourseById(id);
-    } catch (err) {
-      console.error(`Failed to get course with ID ${id}:`, err);
-      setError("Failed to load course details. Please try again later.");
-      return undefined;
+  // Load courses on auth changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshCourses();
+    } else {
+      setMyCourses([]);
     }
-  };
+  }, [isAuthenticated, currentUser?.userId]);
 
-  const createCourse = async (course: Course) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await courseApi.createCourse(course);
-      await getAllCourses();
-    } catch (err) {
-      console.error("Failed to create course:", err);
-      setError("Failed to create course. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // STUDENT METHODS
 
-  const enrollInCourse = async (joinCode: string) => {
+  // Enroll in a course using join code
+  const enrollInCourse = async (joinCode: string): Promise<boolean> => {
+    if (!hasRole("Student")) return false;
+
     setLoading(true);
-    setError(null);
+    clearError();
+
     try {
       await enrollmentApi.enrollInCourse(joinCode);
-      await getAllCourses();
+      await refreshCourses();
+      return true;
     } catch (err) {
-      console.error("Failed to enroll in course:", err);
-      setError(
+      return handleError(
+        err,
         "Failed to enroll in course. Please check the join code and try again."
       );
     } finally {
@@ -129,146 +207,371 @@ export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
     }
   };
 
-  const getItemsByCourse = async (courseId: number) => {
+  // Get student's enrollments
+  const getEnrollments = async (): Promise<Enrollment[]> => {
+    if (!hasRole("Student") || !currentUser) return [];
+
+    // Add check for user ID
+    if (!currentUser.userId) {
+      console.warn("Cannot get enrollments: User ID is undefined");
+      return [];
+    }
+
     try {
-      return await courseItemApi.getItemsByCourse(courseId);
+      return await enrollmentApi.getEnrollmentsByStudent(currentUser.userId);
     } catch (err) {
-      console.error(`Failed to get items for course ${courseId}:`, err);
-      setError("Failed to load course items. Please try again later.");
+      handleError(err, "Failed to fetch your enrollments.");
       return [];
     }
   };
 
-  const createMaterial = async (
-    title: string,
-    courseId: number,
-    file: File
-  ) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await materialApi.createMaterial(title, courseId, file);
-    } catch (err) {
-      console.error("Failed to create material:", err);
-      setError("Failed to upload material. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Mark a course item as completed
+  const markItemAsCompleted = async (itemId: number): Promise<boolean> => {
+    if (!hasRole("Student")) return false;
 
-  const createQuiz = async (courseId: number, quiz: Quiz) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await quizApi.createQuiz(courseId, quiz);
-    } catch (err) {
-      console.error("Failed to create quiz:", err);
-      setError("Failed to create quiz. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    clearError();
 
-  const addQuestion = async (quizId: number, question: Question) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await quizApi.addQuestion(quizId, question);
-    } catch (err) {
-      console.error("Failed to add question:", err);
-      setError("Failed to add question. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const startSubmission = async (quizId: number) => {
-    try {
-      return await submissionApi.startSubmission(quizId);
-    } catch (err) {
-      console.error("Failed to start submission:", err);
-      setError("Failed to start quiz. Please try again later.");
-      throw err; // Need to throw to handle in the component
-    }
-  };
-
-  const submitSubmission = async (submissionId: number, answers: Answer[]) => {
-    try {
-      return await submissionApi.submitSubmission(submissionId, answers);
-    } catch (err) {
-      console.error("Failed to submit answers:", err);
-      setError("Failed to submit quiz. Please try again later.");
-      throw err; // Need to throw to handle in the component
-    }
-  };
-
-  const getSubmissionById = async (id: number) => {
-    try {
-      return await submissionApi.getSubmissionById(id);
-    } catch (err) {
-      console.error(`Failed to get submission ${id}:`, err);
-      setError("Failed to load submission. Please try again later.");
-      throw err;
-    }
-  };
-
-  const markItemAsCompleted = async (itemId: number) => {
-    setError(null);
     try {
       await completedItemApi.markItemAsCompleted(itemId);
+      return true;
     } catch (err) {
-      console.error("Failed to mark item as completed:", err);
-      setError("Failed to update progress. Please try again later.");
+      return handleError(err, "Failed to mark item as completed.");
     }
   };
 
-  const getCompletedItemsByCourse = async (courseId: number) => {
+  // Get completed items for a course
+  const getCompletedItems = async (
+    courseId: number
+  ): Promise<CompletedCourseItem[]> => {
+    if (!hasRole("Student")) return [];
+
     try {
       return await completedItemApi.getCompletedItemsByCourse(courseId);
     } catch (err) {
-      console.error("Failed to get completed items:", err);
-      setError("Failed to load progress data. Please try again later.");
+      handleError(err, "Failed to fetch completed items.");
       return [];
     }
   };
 
-  const removeCompletedItem = async (completedItemId: number) => {
-    setError(null);
+  // TEACHER METHODS
+
+  // Create a new course
+  const createCourse = async (
+    courseData: Partial<Course>
+  ): Promise<boolean> => {
+    if (!hasRole("Teacher") || !currentUser) return false;
+
+    setLoading(true);
+    clearError();
+
     try {
-      await completedItemApi.removeCompletedItem(completedItemId);
+      // Ensure teacher is set to current user
+      const course = {
+        ...courseData,
+        teacher: {
+          userId: currentUser.userId,
+          username: currentUser.sub,
+          email: currentUser.email,
+          role: "Teacher",
+        },
+      };
+
+      await courseApi.createCourse(course as Course);
+      await refreshCourses();
+      return true;
     } catch (err) {
-      console.error("Failed to remove completed item:", err);
-      setError("Failed to update progress. Please try again later.");
+      return handleError(err, "Failed to create course.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      getAllCourses();
-    }
-  }, [isAuthenticated]);
+  // Update an existing course
+  const updateCourse = async (
+    courseId: number,
+    courseData: Partial<Course>
+  ): Promise<boolean> => {
+    if (!hasRole("Teacher")) return false;
 
-  const value = {
-    courses,
+    setLoading(true);
+    clearError();
+
+    try {
+      // First get the existing course
+      const existingCourse = await courseApi.getCourseById(courseId);
+
+      // Check if this course belongs to this teacher
+      if (existingCourse.teacher.userId !== currentUser?.userId) {
+        setError("You don't have permission to update this course.");
+        return false;
+      }
+
+      // Update the course
+      const updatedCourse = {
+        ...existingCourse,
+        ...courseData,
+      };
+
+      await courseApi.updateCourse(updatedCourse);
+      await refreshCourses();
+      return true;
+    } catch (err) {
+      return handleError(err, "Failed to update course.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete a course
+  const deleteCourse = async (courseId: number): Promise<boolean> => {
+    if (!hasRole("Teacher")) return false;
+
+    setLoading(true);
+    clearError();
+
+    try {
+      await courseApi.deleteCourse(courseId);
+      await refreshCourses();
+      return true;
+    } catch (err) {
+      return handleError(err, "Failed to delete course.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // SHARED METHODS (WITH ROLE CHECKS)
+
+  // Get course details
+  const getCourseDetails = async (courseId: number): Promise<Course | null> => {
+    clearError();
+
+    try {
+      // For students, check enrollment and fetch course directly
+      if (hasRole("Student") && currentUser) {
+        if (!currentUser.userId) {
+          console.warn("Cannot get course details: User ID is undefined");
+          return null;
+        }
+        
+        // Get all student enrollments
+        const enrollments = await enrollmentApi.getEnrollmentsByStudent(
+          currentUser.userId
+        );
+        
+        // Check if student is enrolled in this course
+        const isEnrolled = enrollments.some(e => e.courseId === courseId);
+        
+        if (!isEnrolled) {
+          setError("You're not enrolled in this course.");
+          return null;
+        }
+        
+        // Fetch the course directly
+        return await courseApi.getCourseById(courseId);
+      }
+
+      // For teachers, get it directly and check ownership
+      if (hasRole("Teacher")) {
+        const course = await courseApi.getCourseById(courseId);
+
+        if (course.teacher.userId === currentUser?.userId) {
+          return course;
+        }
+
+        setError("You don't have permission to view this course.");
+        return null;
+      }
+
+      return null;
+    } catch (err) {
+      handleError(err, "Failed to load course details.");
+      return null;
+    }
+  };
+
+  // Get course items (works for both students and teachers)
+  const getCourseItems = async (
+    courseId: number
+  ): Promise<(CourseMaterial | Quiz)[]> => {
+    if (!isAuthenticated) return [];
+
+    clearError();
+
+    try {
+      // First verify this user has access to this course
+      const courseIds = myCourses.map((c) => c.courseId);
+
+      if (!courseIds.includes(courseId)) {
+        setError("You don't have access to this course.");
+        return [];
+      }
+
+      return await courseItemApi.getItemsByCourse(courseId);
+    } catch (err) {
+      handleError(err, "Failed to load course items.");
+      return [];
+    }
+  };
+
+  // Create a course material (teacher only)
+  const createMaterial = async (
+    courseId: number,
+    title: string,
+    file: File
+  ): Promise<boolean> => {
+    if (!hasRole("Teacher")) return false;
+
+    setLoading(true);
+    clearError();
+
+    try {
+      await materialApi.createMaterial(title, courseId, file);
+      return true;
+    } catch (err) {
+      return handleError(err, "Failed to create course material.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Create a quiz (teacher only)
+  const createQuiz = async (
+    courseId: number,
+    quizData: Partial<Quiz>
+  ): Promise<boolean> => {
+    if (!hasRole("Teacher")) return false;
+
+    setLoading(true);
+    clearError();
+
+    try {
+      // Set required fields
+      const quiz = {
+        ...quizData,
+        itemType: "Quiz",
+        addDate: new Date().toISOString(),
+        questions: quizData.questions || [],
+      } as Quiz;
+
+      await quizApi.createQuiz(courseId, quiz);
+      return true;
+    } catch (err) {
+      return handleError(err, "Failed to create quiz.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get quiz details
+  const getQuizDetails = async (quizId: number): Promise<Quiz | null> => {
+    clearError();
+
+    try {
+      // First check if this quiz belongs to one of the user's courses
+      const allItems = await Promise.all(
+        myCourses.map((course) =>
+          courseItemApi.getItemsByCourse(course.courseId)
+        )
+      );
+
+      const flatItems = allItems.flat();
+      const quiz = flatItems.find(
+        (item) => item.itemType === "Quiz" && item.itemId === quizId
+      ) as Quiz | undefined;
+
+      if (!quiz) {
+        setError("Quiz not found or you don't have access.");
+        return null;
+      }
+
+      const questions = await questionApi.getQuestionsByQuizId(quizId);
+      return { ...quiz, questions };
+    } catch (err) {
+      handleError(err, "Failed to load quiz details.");
+      return null;
+    }
+  };
+
+  // Add a question to a quiz (teacher only)
+  const addQuestion = async (
+    quizId: number,
+    questionData: Partial<Question>
+  ): Promise<boolean> => {
+    if (!hasRole("Teacher")) return false;
+
+    clearError();
+
+    try {
+      // Format the question
+      const question = {
+        ...questionData,
+        questionType: questionData.questionType || "MULTIPLE_CHOICE",
+      } as Question;
+
+      await quizApi.addQuestion(quizId, question);
+      return true;
+    } catch (err) {
+      return handleError(err, "Failed to add question to quiz.");
+    }
+  };
+
+  // Submit a quiz (student only)
+  const submitQuiz = async (
+    quizId: number,
+    answers: Answer[]
+  ): Promise<boolean> => {
+    if (!hasRole("Student")) return false;
+
+    clearError();
+
+    try {
+      // Start a submission
+      const submission = await submissionApi.startSubmission(quizId);
+
+      // Submit answers
+      await submissionApi.submitSubmission(submission.submissionId, answers);
+      return true;
+    } catch (err) {
+      return handleError(err, "Failed to submit quiz.");
+    }
+  };
+
+  const contextValue: CourseContextType = {
+    myCourses,
     loading,
     error,
-    getAllCourses,
-    getCourseById,
-    createCourse,
+    clearError,
+
+    // Student methods
     enrollInCourse,
-    getItemsByCourse,
+    getEnrollments,
+    markItemAsCompleted,
+    getCompletedItems,
+
+    // Teacher methods
+    createCourse,
+    updateCourse,
+    deleteCourse,
+
+    // Shared methods
+    getCourseDetails,
+    getCourseItems,
     createMaterial,
     createQuiz,
+
+    // Quiz methods
+    getQuizDetails,
     addQuestion,
-    startSubmission,
-    submitSubmission,
-    getSubmissionById,
-    markItemAsCompleted,
-    getCompletedItemsByCourse,
-    removeCompletedItem,
+    submitQuiz,
+
+    // Refresh method
+    refreshCourses,
   };
 
   return (
-    <CourseContext.Provider value={value}>{children}</CourseContext.Provider>
+    <CourseContext.Provider value={contextValue}>
+      {children}
+    </CourseContext.Provider>
   );
 };

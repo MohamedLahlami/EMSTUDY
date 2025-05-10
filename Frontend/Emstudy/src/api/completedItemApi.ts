@@ -6,12 +6,27 @@ export const markItemAsCompleted = async (itemId: number): Promise<any> => {
   return res.data;
 };
 
-export const getCompletedItemsByCourse = async (courseId: number): Promise<CompletedCourseItem[]> => {
-  const res = await api.get<CompletedCourseItem[]>(`/completed-items/course/${courseId}`);
+export const getCompletedItemsByCourse = async (
+  courseId: number
+): Promise<CompletedCourseItem[]> => {
+  const res = await api.get<CompletedCourseItem[]>(
+    `/completed-items/course/${courseId}`
+  );
   return res.data;
 };
 
-export const removeCompletedItem = async (completedItemId: number): Promise<any> => {
+export const removeCompletedItem = async (
+  completedItemId: number
+): Promise<any> => {
   const res = await api.delete(`/completed-items/${completedItemId}`);
   return res.data;
-}; 
+};
+
+export const getCompletedItem = async (
+  completedItemId: number
+): Promise<CompletedCourseItem> => {
+  const res = await api.get<CompletedCourseItem>(
+    `/completed-items/${completedItemId}`
+  );
+  return res.data;
+};

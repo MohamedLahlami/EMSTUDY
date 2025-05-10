@@ -10,7 +10,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
@@ -28,8 +27,6 @@ public class AuthenticationService {
     @Value("${jwt.secret}")
     private String secretKey;
 
-
-
     public UserDetails authenticate(String email, String password) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email, password)
@@ -37,13 +34,18 @@ public class AuthenticationService {
         return userDetailsService.loadUserByUsername(email);
     }
 
-    public String generateToken(UserDetails userdetails) {
+    public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        AppUserDetails appUserDetails = (AppUserDetails) userDetails;
+        claims.put("username", appUserDetails.getUser().getUsername());
+        claims.put("role", appUserDetails.getUser().getRole());
+        claims.put("userId", appUserDetails.getUser().getUserId());
+
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(userdetails.getUsername())
+                .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs)) // 1 day
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

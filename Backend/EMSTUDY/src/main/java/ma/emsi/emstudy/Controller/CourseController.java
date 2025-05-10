@@ -15,8 +15,6 @@ import ma.emsi.emstudy.Service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -88,9 +86,9 @@ public class CourseController {
     public ResponseEntity<Course> getCourseById(
         @Parameter(description = "ID of the course to retrieve") @PathVariable Long courseId,
         @RequestAttribute("userId") Long userId) {
-        if (!courseService.isTeacherOfCourse(userId, courseId)) {
-            throw new ForbiddenAccessException("You are not authorized to view this course");
-        }
+//        if (!courseService.isTeacherOfCourse(userId, courseId)) {
+//            throw new ForbiddenAccessException("You are not authorized to view this course");
+//        }
         Course course = courseService.getCourseById(courseId);
         if (course != null) {
             return new ResponseEntity<>(course, HttpStatus.OK);

@@ -46,20 +46,21 @@ public class SecurityConfig {
                 .authorizeHttpRequests(registry -> registry
 
                         .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
-
-                        .requestMatchers("/courses/**").hasAuthority("Teacher")
-                        .requestMatchers("/quizzes/**").hasAuthority("Teacher")
-                        .requestMatchers("/materials/**").hasAuthority("Teacher")
-                        .requestMatchers("/questions/**").hasAuthority("Teacher")
-                        .requestMatchers("/answers/**").hasAuthority("Teacher")
-                        .requestMatchers("/items/**").hasAuthority("Teacher")
-                        .requestMatchers("/submissions/**").hasAuthority("Teacher")
-
-                        .requestMatchers("/submissions/**").hasAuthority("Student")
-                        .requestMatchers("/enrollments/**").hasAuthority("Student")
-                        .requestMatchers("/completed-items/**").hasAuthority("Student")
-
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+
+//                        .requestMatchers("/courses/**").hasAuthority("Teacher")
+//                        .requestMatchers("/quizzes/**").hasAuthority("Teacher")
+//                        .requestMatchers("/materials/**").hasAuthority("Teacher")
+//                        .requestMatchers("/questions/**").hasAuthority("Teacher")
+//                        .requestMatchers("/answers/**").hasAuthority("Teacher")
+//                        .requestMatchers("/items/**").hasAuthority("Teacher")
+//                        .requestMatchers("/submissions/**").hasAuthority("Teacher")
+//                        .requestMatchers("/enrollments/**").hasAuthority("Teacher")
+//
+//                        .requestMatchers(HttpMethod.GET, "/courses").hasAuthority("Student")
+//                        .requestMatchers("/submissions/**").hasAuthority("Student")
+//                        .requestMatchers("/enrollments/**").hasAuthority("Student")
+//                        .requestMatchers("/completed-items/**").hasAuthority("Student")
 
                         .anyRequest().authenticated()
                 )

@@ -6,7 +6,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 
 const EnrollCourseForm: React.FC = () => {
-  const [courseCode, setCourseCode] = useState('');
+  const [joinCode, setJoinCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -21,22 +21,17 @@ const EnrollCourseForm: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const enrolled = enrollInCourse(courseCode);
+      await enrollInCourse(joinCode);
+      setSuccess(`Successfully enrolled in course with join code: ${joinCode}`);
+      setJoinCode('');
       
-      if (enrolled) {
-        setSuccess(`Successfully enrolled in course with code: ${courseCode}`);
-        setCourseCode('');
-        
-        // Navigate to courses after a short delay
-        setTimeout(() => {
-          navigate('/courses');
-        }, 2000);
-      } else {
-        setError(`No course found with code: ${courseCode}`);
-      }
+      // Navigate to courses after a short delay
+      setTimeout(() => {
+        navigate('/courses');
+      }, 2000);
     } catch (err) {
-      setError('Failed to enroll in course');
-      console.error(err);
+      console.error('Failed to enroll in course:', err);
+      setError('Failed to enroll in course. Please check the join code and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -61,14 +56,14 @@ const EnrollCourseForm: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <Input
-            label="Course Code"
-            id="courseCode"
+            label="Join Code"
+            id="joinCode"
             type="text"
-            value={courseCode}
-            onChange={(e) => setCourseCode(e.target.value)}
+            value={joinCode}
+            onChange={(e) => setJoinCode(e.target.value)}
             required
             fullWidth
-            placeholder="Enter the course code provided by your teacher"
+            placeholder="Enter the join code provided by your teacher"
             helperText="Ask your teacher for the code to join their course"
           />
         </div>
@@ -87,21 +82,13 @@ const EnrollCourseForm: React.FC = () => {
       </form>
       
       <div className="mt-8 border-t pt-4">
-        <h3 className="text-sm font-medium text-gray-500 mb-2">Available Demo Courses:</h3>
-        <ul className="space-y-1 text-sm text-gray-600">
-          <li className="flex items-center">
-            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2 font-mono">CS101</span>
-            Introduction to Computer Science
-          </li>
-          <li className="flex items-center">
-            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2 font-mono">MATH202</span>
-            Advanced Mathematics
-          </li>
-          <li className="flex items-center">
-            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2 font-mono">CS201</span>
-            Data Structures and Algorithms
-          </li>
-        </ul>
+        <h3 className="text-sm font-medium text-gray-500 mb-2">How to join a course:</h3>
+        <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
+          <li>Ask your teacher for the course join code</li>
+          <li>Enter the join code in the field above</li>
+          <li>Click "Enroll" to join the course</li>
+          <li>Access course materials and quizzes from your dashboard</li>
+        </ol>
       </div>
     </div>
   );

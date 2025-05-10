@@ -84,7 +84,7 @@ public class CourseMaterialController {
             @ApiResponse(responseCode = "404", description = "Material not found")
         }
     )
-    @GetMapping("/{materialId}/download")
+    @GetMapping("/{materialId}")
     public ResponseEntity<UrlResource> downloadMaterial(
             @Parameter(description = "ID of the material to download") @PathVariable Long materialId) {
         UrlResource resource = fileStorageService.downloadMaterial(materialId);
@@ -95,6 +95,30 @@ public class CourseMaterialController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
     }
+
+    @Operation(
+            summary = "View course material image",
+            description = "View an image course material directly in the browser",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Image displayed successfully"),
+                    @ApiResponse(responseCode = "400", description = "Material is not an image"),
+                    @ApiResponse(responseCode = "404", description = "Material not found")
+            }
+    )
+    @GetMapping("/image/{materialId}")
+    public ResponseEntity<UrlResource> viewImage(
+            @Parameter(description = "ID of the image material to view") @PathVariable Long materialId) {
+        CourseMaterial material = courseMaterialService.getCourseItemById(materialId);
+        if (material.getCourseMaterialType() != CourseMaterialType.IMAGE) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        UrlResource resource = fileStorageService.downloadMaterial(materialId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .body(resource);
+    }
+
 
     @Operation(
         summary = "Get materials by course",
