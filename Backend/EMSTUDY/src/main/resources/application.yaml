@@ -9,9 +9,9 @@ jwt:
 
 spring:
   datasource:
-    url: jdbc:mysql://db:3306/appdb
-    username: user
-    password: pass
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:appdb}
+    username: ${DB_USERNAME:user}
+    password: ${DB_PASSWORD:pass}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   servlet:
@@ -26,7 +26,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQL8Dialect
+        dialect: org.hibernate.dialect.MySQLDialect
 
 file:
   upload-dir: uploads
