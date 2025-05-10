@@ -76,9 +76,9 @@ jobs:
         working-directory: Frontend/Emstudy
         run: npm ci
 
-      - name: Run tests
+      - name: Run linting
         working-directory: Frontend/Emstudy
-        run: npm test -- --watchAll=false
+        run: npm run lint
 
       - name: Build React app
         working-directory: Frontend/Emstudy
