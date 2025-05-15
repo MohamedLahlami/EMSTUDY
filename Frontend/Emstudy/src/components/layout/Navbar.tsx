@@ -27,7 +27,7 @@ const Navbar: React.FC = () => {
                 className="text-xl font-bold text-[#008d36] flex items-center"
               >
                 <img
-                  src={import.meta.env.BASE_URL + "src/static/emsi.svg"}
+                  src={"/emsi.svg"}
                   alt="EMSI Logo"
                   className="mr-2 h-6 w-6"
                 />

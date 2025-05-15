@@ -52,3 +52,12 @@ export const getMaterialById = async (
   const res = await api.get<CourseMaterial>(`/materials/${itemId}`);
   return res.data;
 };
+
+export const getMarkdownMaterial = async (
+  materialId: number
+): Promise<string> => {
+  const res = await api.get(`/materials/markdown/${materialId}`, {
+    responseType: "text",
+  });
+  return res.data;
+};

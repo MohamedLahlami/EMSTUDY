@@ -2,7 +2,9 @@ import api from "./apiClient";
 import { Quiz, Question } from "../types";
 
 export const createQuiz = async (courseId: number, quiz: Quiz): Promise<Quiz> => {
-  const res = await api.post<Quiz>(`/quizzes?courseId=${courseId}`, quiz);
+  const { itemId, ...rest } = quiz;
+  const payload = { ...rest, itemId: null };
+  const res = await api.post<Quiz>(`/quizzes?courseId=${courseId}`, payload);
   return res.data;
 };
 

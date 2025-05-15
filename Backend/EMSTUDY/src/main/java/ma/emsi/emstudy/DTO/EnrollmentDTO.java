@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ma.emsi.emstudy.Entity.Student;
 
 import java.time.LocalDate;
 
@@ -14,7 +15,7 @@ import java.time.LocalDate;
 public class EnrollmentDTO {
     private Long enrollmentId;
     private Long courseId;
-    private Long studentId;
+    private StudentDTO student;
     private LocalDate enrollmentDate;
     private LocalDate completionDate;
 }

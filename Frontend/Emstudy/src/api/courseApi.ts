@@ -12,7 +12,9 @@ export const getCourseById = async (courseId: number): Promise<Course> => {
 };
 
 export const createCourse = async (course: Course): Promise<any> => {
-  const res = await api.post("/courses", course);
+  const { courseId, teacher, ...rest } = course;
+  const payload = { ...rest, courseId: null, teacher: null };
+  const res = await api.post("/courses", payload);
   return res.data;
 };
 

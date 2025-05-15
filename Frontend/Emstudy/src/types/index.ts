@@ -16,7 +16,7 @@ export interface UserDTO {
 }
 
 export interface Teacher {
-  userId: number;
+  userId: number | null;
   username: string;
   password: string;
   email: string;
@@ -26,7 +26,7 @@ export interface Teacher {
 }
 
 export interface Student {
-  userId: number;
+  userId: number | null;
   username: string;
   password: string;
   email: string;
@@ -39,18 +39,19 @@ export interface Student {
 }
 
 export interface Course {
-  courseId: number;
-  joinCode: string;
+  courseId: number | null;
+  joinCode: string | null;
   teacher: Teacher;
   courseItems: (CourseMaterial | Quiz)[];
   completedCourseItems?: CompletedCourseItem[];
   enrollments?: Enrollment[];
   name: string;
   description: string;
+  creationDate: string;
 }
 
 export interface CourseItem {
-  itemId: number;
+  itemId: number | null;
   title: string;
   addDate: string;
   itemType: string;
@@ -58,7 +59,13 @@ export interface CourseItem {
 }
 
 export interface CourseMaterial extends CourseItem {
-  courseMaterialType: "PDF" | "VIDEO" | "IMAGE" | "DOCUMENT" | "OTHER";
+  courseMaterialType:
+    | "PDF"
+    | "VIDEO"
+    | "IMAGE"
+    | "DOCUMENT"
+    | "MARKDOWN"
+    | "OTHER";
   url: string;
   description: string;
 }
@@ -70,9 +77,9 @@ export interface Quiz extends CourseItem {
 }
 
 export interface Enrollment {
-  enrollmentId: number;
-  courseId: number;
-  studentId: number;
+  enrollmentId: number | null;
+  courseId: number | null;
+  studentId: number | null;
   enrollmentDate: string;
   completionDate?: string;
   student?: Student;
@@ -80,7 +87,7 @@ export interface Enrollment {
 }
 
 export interface CompletedCourseItem {
-  completedCourseItemId: number;
+  completedCourseItemId: number | null;
   student: Student;
   course: Course;
   courseItem: CourseMaterial | Quiz;
@@ -88,7 +95,7 @@ export interface CompletedCourseItem {
 }
 
 export interface Question {
-  questionId: number;
+  questionId: number | null;
   questionText: string;
   points: number;
   questionType: "MULTIPLE_CHOICE" | "TRUE_FALSE" | "MULTI_SELECT";
@@ -98,14 +105,14 @@ export interface Question {
 }
 
 export interface Answer {
-  answerId: number;
+  answerId: number | null;
   answerText: string;
   question?: Question;
   correct: boolean;
 }
 
 export interface Submission {
-  submissionId: number;
+  submissionId: number | null;
   startTime: string;
   endTime: string;
   submitted: boolean;

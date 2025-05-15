@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Users } from "lucide-react";
 import { Course } from "../../types";
 import { Card, CardContent } from "../ui/Card";
+import { format } from "date-fns";
 
 interface CourseCardProps {
   course: Course;
@@ -25,7 +26,12 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
       hover
     >
       <div className="relative h-40 bg-gray-200">
-        <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600">
+        <div
+          className="w-full h-full flex items-center justify-center"
+          style={{
+            background: "linear-gradient(to right, #008d36,rgb(65, 199, 117))",
+          }}
+        >
           <span className="text-white text-2xl font-bold">
             {course.name.charAt(0)}
           </span>
@@ -43,6 +49,11 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
         <p className="text-gray-600 text-sm line-clamp-2 mb-3">
           {course.description}
         </p>
+        {course.creationDate && (
+          <p className="text-gray-500 text-xs mb-2">
+            Created on: {format(new Date(course.creationDate), "MMM d, yyyy")}
+          </p>
+        )}
         <div className="flex items-center text-gray-500 text-xs">
           <Users size={14} className="mr-1" />
           <span>{enrollmentCount} students</span>

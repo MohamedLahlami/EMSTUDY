@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class Course {
     private String joinCode;
     private String Name;
     private String Description;
+    private LocalDate creationDate;
 
     @ManyToOne
     @JoinColumn(name = "teacher_id")
