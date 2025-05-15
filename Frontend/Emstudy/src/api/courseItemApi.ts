@@ -26,6 +26,8 @@ export const updateItem = async (
   itemId: number,
   item: CourseMaterial | Quiz
 ): Promise<CourseMaterial | Quiz> => {
-  const res = await api.put<CourseMaterial | Quiz>(`/items/${itemId}`, item);
+  const { itemId: _itemId, ...rest } = item;
+  const payload = { ...rest, itemId: null };
+  const res = await api.put<CourseMaterial | Quiz>(`/items/${itemId}`, payload);
   return res.data;
 };

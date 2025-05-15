@@ -12,26 +12,23 @@ import { format } from "date-fns";
 
 const CoursesPage: React.FC = () => {
   const { currentUser, hasRole } = useAuth();
-  const { 
-    myCourses, 
-    loading, 
-    error, 
-    enrollInCourse, 
-    refreshCourses 
-  } = useCourses();
-  
+  const { myCourses, loading, error, enrollInCourse, refreshCourses } =
+    useCourses();
+
   const [showEnrollPopup, setShowEnrollPopup] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [enrollmentLoading, setEnrollmentLoading] = useState(false);
   const [enrollmentError, setEnrollmentError] = useState<string | null>(null);
-  const [enrollmentSuccess, setEnrollmentSuccess] = useState<string | null>(null);
-  
+  const [enrollmentSuccess, setEnrollmentSuccess] = useState<string | null>(
+    null
+  );
+
   const location = useLocation();
   const navigate = useNavigate();
 
   // Open popup if ?enroll=1 is present
   useEffect(() => {
-    if (hasRole('Student')) {
+    if (hasRole("Student")) {
       const params = new URLSearchParams(location.search);
       if (params.get("enroll") === "1") {
         setShowEnrollPopup(true);
@@ -41,23 +38,23 @@ const CoursesPage: React.FC = () => {
 
   const handleEnroll = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!joinCode.trim()) {
       setEnrollmentError("Please enter a join code");
       return;
     }
-    
+
     setEnrollmentError(null);
     setEnrollmentSuccess(null);
     setEnrollmentLoading(true);
 
     try {
       const success = await enrollInCourse(joinCode);
-      
+
       if (success) {
         setEnrollmentSuccess("Successfully enrolled in course!");
         setJoinCode("");
-        
+
         // Close the popup after a delay
         setTimeout(() => {
           setShowEnrollPopup(false);
@@ -78,7 +75,7 @@ const CoursesPage: React.FC = () => {
   };
 
   const renderEmptyState = () => {
-    if (hasRole('Student')) {
+    if (hasRole("Student")) {
       return (
         <div className="bg-white rounded-lg shadow-md p-8 text-center">
           <Book className="h-16 w-16 text-blue-500 mx-auto mb-4" />
@@ -97,7 +94,7 @@ const CoursesPage: React.FC = () => {
           </Button>
         </div>
       );
-    } else if (hasRole('Teacher')) {
+    } else if (hasRole("Teacher")) {
       return (
         <div className="bg-white rounded-lg shadow-md p-8 text-center">
           <Users className="h-16 w-16 text-blue-500 mx-auto mb-4" />
@@ -120,9 +117,7 @@ const CoursesPage: React.FC = () => {
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             No courses available
           </h3>
-          <p className="text-gray-500">
-            Please log in to view your courses.
-          </p>
+          <p className="text-gray-500">Please log in to view your courses.</p>
         </div>
       );
     }
@@ -137,7 +132,7 @@ const CoursesPage: React.FC = () => {
       transition={{ delay: index * 0.1, duration: 0.3 }}
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
     >
-      <div className="h-3 bg-blue-500"></div>
+      <div className="h-3 bg-[#4caf50]"></div>
       <div className="p-6">
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
           {course.name}
@@ -145,26 +140,29 @@ const CoursesPage: React.FC = () => {
         <p className="text-gray-500 text-sm mb-4 line-clamp-2">
           {course.description || "No description provided."}
         </p>
-        
+
         <div className="flex items-center text-sm text-gray-500 mb-3">
           <Calendar className="h-4 w-4 mr-2" />
           <span>
-            Created: {course.addDate 
-              ? format(new Date(course.addDate), "MMM d, yyyy") 
+            Created:{" "}
+            {course.creationDate
+              ? format(new Date(course.creationDate), "MMM d, yyyy")
               : "Unknown date"}
           </span>
         </div>
-        
+
         {course.teacher && (
           <div className="flex items-center text-sm text-gray-500 mb-4">
             <User className="h-4 w-4 mr-2" />
-            <span>Teacher: {course.teacher.username || course.teacher.email}</span>
+            <span>
+              Teacher: {course.teacher.username || course.teacher.email}
+            </span>
           </div>
         )}
-        
+
         <Link to={`/courses/${course.courseId}`}>
           <Button variant="primary" fullWidth>
-            {hasRole('Student') ? "View Course" : "Manage Course"}
+            {hasRole("Student") ? "View Course" : "Manage Course"}
           </Button>
         </Link>
       </div>
@@ -174,10 +172,11 @@ const CoursesPage: React.FC = () => {
   return (
     <PageLayout
       title="My Courses"
-      description={hasRole('Student') 
-        ? "Courses you are enrolled in" 
-        : hasRole('Teacher') 
-          ? "Courses you teach" 
+      description={
+        hasRole("Student")
+          ? "Courses you are enrolled in"
+          : hasRole("Teacher")
+          ? "Courses you teach"
           : "All courses"
       }
     >
@@ -189,20 +188,22 @@ const CoursesPage: React.FC = () => {
         </div>
 
         <div>
-          {hasRole('Teacher') ? (
+          {hasRole("Teacher") ? (
             <Link to="/courses/create">
               <Button variant="primary" icon={<PlusCircle size={18} />}>
                 Create Course
               </Button>
             </Link>
-          ) : hasRole('Student') && (
-            <Button
-              variant="primary"
-              icon={<PlusCircle size={18} />}
-              onClick={() => setShowEnrollPopup(true)}
-            >
-              Enroll in Course
-            </Button>
+          ) : (
+            hasRole("Student") && (
+              <Button
+                variant="primary"
+                icon={<PlusCircle size={18} />}
+                onClick={() => setShowEnrollPopup(true)}
+              >
+                Enroll in Course
+              </Button>
+            )
           )}
         </div>
       </div>
@@ -226,7 +227,7 @@ const CoursesPage: React.FC = () => {
       )}
 
       {/* Enrollment Popup for Students */}
-      {showEnrollPopup && hasRole('Student') && (
+      {showEnrollPopup && hasRole("Student") && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">

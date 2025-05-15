@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.DTO.EnrollmentDTO;
+import ma.emsi.emstudy.DTO.StudentDTO;
 import ma.emsi.emstudy.Entity.Enrollment;
 import ma.emsi.emstudy.Exception.InvalidInputException;
 import ma.emsi.emstudy.Service.EnrollmentService;
@@ -54,10 +55,18 @@ public class EnrollmentController {
     @GetMapping
     public ResponseEntity<List<EnrollmentDTO>> getAllEnrollments() {
         List<Enrollment> enrollments = enrollmentService.getAllEnrollments();
+        return toEnrollmentDTO(enrollments);
+    }
+
+    private ResponseEntity<List<EnrollmentDTO>> toEnrollmentDTO(List<Enrollment> enrollments) {
         List<EnrollmentDTO> enrollmentDTOs = enrollments.stream()
                 .map(enrollment -> EnrollmentDTO.builder()
                         .enrollmentId(enrollment.getEnrollmentId())
-                        .studentId(enrollment.getStudent().getUserId())
+                        .student(StudentDTO.builder()
+                                .id(enrollment.getStudent().getUserId())
+                                .username(enrollment.getStudent().getUsername())
+                                .email(enrollment.getStudent().getEmail())
+                                .build())
                         .courseId(enrollment.getCourse().getCourseId())
                         .enrollmentDate(enrollment.getEnrollmentDate())
                         .completionDate(enrollment.getCompletionDate())
@@ -80,7 +89,11 @@ public class EnrollmentController {
         Enrollment enrollment = enrollmentService.getEnrollmentById(enrollmentId);
         EnrollmentDTO enrollmentDTO = EnrollmentDTO.builder()
                 .enrollmentId(enrollment.getEnrollmentId())
-                .studentId(enrollment.getStudent().getUserId())
+                .student(StudentDTO.builder()
+                        .id(enrollment.getStudent().getUserId())
+                        .username(enrollment.getStudent().getUsername())
+                        .email(enrollment.getStudent().getEmail())
+                        .build())
                 .courseId(enrollment.getCourse().getCourseId())
                 .enrollmentDate(enrollment.getEnrollmentDate())
                 .completionDate(enrollment.getCompletionDate())
@@ -100,16 +113,7 @@ public class EnrollmentController {
     public ResponseEntity<List<EnrollmentDTO>> getEnrollmentsByStudent(
             @Parameter(description = "ID of the student") @PathVariable Long studentId) {
         List<Enrollment> enrollments = enrollmentService.getEnrollmentsByStudentId(studentId);
-        List<EnrollmentDTO> enrollmentDTOs = enrollments.stream()
-                .map(enrollment -> EnrollmentDTO.builder()
-                        .enrollmentId(enrollment.getEnrollmentId())
-                        .studentId(enrollment.getStudent().getUserId())
-                        .courseId(enrollment.getCourse().getCourseId())
-                        .enrollmentDate(enrollment.getEnrollmentDate())
-                        .completionDate(enrollment.getCompletionDate())
-                        .build())
-                .toList();
-        return ResponseEntity.ok(enrollmentDTOs);
+        return toEnrollmentDTO(enrollments);
     }
 
     @Operation(
@@ -124,16 +128,7 @@ public class EnrollmentController {
     public ResponseEntity<List<EnrollmentDTO>> getEnrollmentsByCourse(
             @Parameter(description = "ID of the course") @PathVariable Long courseId) {
         List<Enrollment> enrollments = enrollmentService.getEnrollmentsByCourseId(courseId);
-        List<EnrollmentDTO> enrollmentDTOs = enrollments.stream()
-                .map(enrollment -> EnrollmentDTO.builder()
-                        .enrollmentId(enrollment.getEnrollmentId())
-                        .studentId(enrollment.getStudent().getUserId())
-                        .courseId(enrollment.getCourse().getCourseId())
-                        .enrollmentDate(enrollment.getEnrollmentDate())
-                        .completionDate(enrollment.getCompletionDate())
-                        .build())
-                .toList();
-        return ResponseEntity.ok(enrollmentDTOs);
+        return toEnrollmentDTO(enrollments);
     }
 
 @Operation(

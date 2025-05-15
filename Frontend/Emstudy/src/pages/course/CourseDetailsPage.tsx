@@ -18,6 +18,10 @@ import Button from "../../components/ui/Button";
 import { Course, CourseMaterial, Quiz, Submission } from "../../types";
 import api from "../../api/apiClient";
 import QuizManager from "../../components/quiz/QuizManager";
+import { getMarkdownMaterial } from "../../api/materialApi";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { deleteItem } from "../../api/courseItemApi";
 
 const CourseDetailsPage = () => {
   const { courseId } = useParams();
@@ -34,6 +38,9 @@ const CourseDetailsPage = () => {
     [quizId: number]: Submission | null;
   }>({});
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [studentEnrollments, setStudentEnrollments] = useState<any[]>([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const { currentUser } = useAuth();
   const {
@@ -43,6 +50,7 @@ const CourseDetailsPage = () => {
     createQuiz,
     getCurrentUserSubmissions,
     hasAttemptedQuiz,
+    deleteCourse,
   } = useCourses();
 
   // Add state for selected image to view in modal
@@ -103,7 +111,7 @@ const CourseDetailsPage = () => {
       const url = window.URL.createObjectURL(blob);
       setImageBlobs((prev) => ({
         ...prev,
-        [material.itemId]: url,
+        [material.itemId!]: url,
       }));
     } catch (error) {
       console.error("Failed to load image:", error);
@@ -202,6 +210,22 @@ const CourseDetailsPage = () => {
     getCurrentUserSubmissions,
   ]);
 
+  const isTeacher = currentUser?.role === "Teacher";
+
+  useEffect(() => {
+    if (isTeacher && activeTab === "students" && courseId) {
+      const fetchEnrollments = async () => {
+        try {
+          const res = await api.get(`/enrollments/courses/${courseId}`);
+          setStudentEnrollments(res.data);
+        } catch (err) {
+          setStudentEnrollments([]);
+        }
+      };
+      fetchEnrollments();
+    }
+  }, [activeTab, isTeacher, courseId]);
+
   if (!courseId) {
     return <Navigate to="/courses" />;
   }
@@ -228,8 +252,6 @@ const CourseDetailsPage = () => {
       </PageLayout>
     );
   }
-
-  const isTeacher = currentUser?.role === "Teacher";
 
   const handleAddMaterial = async (materialData: {
     title: string;
@@ -291,7 +313,7 @@ const CourseDetailsPage = () => {
     return (
       <div className="space-y-4">
         {quizzes.map((quiz) => {
-          const submission = quizSubmissions[quiz.itemId];
+          const submission = quizSubmissions[quiz.itemId!];
           const hasSubmitted = submission?.submitted === true;
 
           return (
@@ -340,6 +362,490 @@ const CourseDetailsPage = () => {
         })}
       </div>
     );
+  };
+
+  console.log("All materials:", materials);
+  materials.forEach((m) => {
+    console.log("Material type:", m.courseMaterialType, "ID:", m.itemId, m);
+  });
+
+  function MaterialCard({
+    material,
+    imageBlobs,
+    setSelectedImage,
+    handleDownload,
+    isTeacher,
+    onDelete,
+  }: {
+    material: CourseMaterial;
+    imageBlobs: Record<number, string>;
+    setSelectedImage: (url: string) => void;
+    handleDownload: (material: CourseMaterial) => void;
+    isTeacher: boolean;
+    onDelete: (itemId: number) => void;
+  }) {
+    // MARKDOWN
+    if (material.courseMaterialType === "MARKDOWN") {
+      const [content, setContent] = useState("");
+      const [loading, setLoading] = useState(false);
+      useEffect(() => {
+        let isMounted = true;
+        const fetchMarkdown = async () => {
+          setLoading(true);
+          try {
+            const text = await getMarkdownMaterial(material.itemId!);
+            if (isMounted) setContent(text);
+          } catch (e) {
+            if (isMounted) setContent("Failed to load markdown content.");
+          } finally {
+            if (isMounted) setLoading(false);
+          }
+        };
+        fetchMarkdown();
+        return () => {
+          isMounted = false;
+        };
+      }, [material.itemId]);
+      return (
+        <Card key={material.itemId}>
+          <CardContent className="p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 pt-1">
+                <FileText className="h-6 w-6 text-blue-500" />
+              </div>
+              <div className="ml-4 flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {material.title}
+                </h3>
+                {material.description && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    {material.description}
+                  </p>
+                )}
+                <div className="mt-2 flex items-center text-sm text-gray-500">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  <span>
+                    Added:{" "}
+                    {material.addDate
+                      ? format(new Date(material.addDate), "MMM d, yyyy")
+                      : "Unknown date"}
+                  </span>
+                </div>
+                {loading ? (
+                  <div className="text-gray-400 italic">
+                    Loading markdown...
+                  </div>
+                ) : (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {content}
+                  </ReactMarkdown>
+                )}
+              </div>
+              <div className="ml-4 flex gap-2">
+                {isTeacher && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this item?"
+                        )
+                      ) {
+                        onDelete(material.itemId!);
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    // IMAGE
+    if (
+      material.courseMaterialType === "IMAGE" &&
+      imageBlobs[material.itemId!]
+    ) {
+      return (
+        <Card key={material.itemId}>
+          <CardContent className="p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 pt-1">
+                <FileText className="h-6 w-6 text-blue-500" />
+              </div>
+              <div className="ml-4 flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {material.title}
+                </h3>
+                {material.description && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    {material.description}
+                  </p>
+                )}
+                <div className="mt-2 flex items-center text-sm text-gray-500">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  <span>
+                    Added:{" "}
+                    {material.addDate
+                      ? format(new Date(material.addDate), "MMM d, yyyy")
+                      : "Unknown date"}
+                  </span>
+                </div>
+                <div className="mt-3">
+                  <img
+                    src={imageBlobs[material.itemId!]}
+                    alt={material.title}
+                    className="max-w-full max-h-96 rounded-md shadow-sm cursor-pointer"
+                    onClick={() =>
+                      setSelectedImage(imageBlobs[material.itemId!])
+                    }
+                  />
+                </div>
+              </div>
+              <div className="ml-4 flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedImage(imageBlobs[material.itemId!])}
+                  disabled={!imageBlobs[material.itemId!]}
+                >
+                  View Full Size
+                </Button>
+                {isTeacher && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this item?"
+                        )
+                      ) {
+                        onDelete(material.itemId!);
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    // PDF
+    if (material.courseMaterialType === "PDF") {
+      return (
+        <Card key={material.itemId}>
+          <CardContent className="p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 pt-1">
+                <FileText className="h-6 w-6 text-blue-500" />
+              </div>
+              <div className="ml-4 flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {material.title}
+                </h3>
+                {material.description && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    {material.description}
+                  </p>
+                )}
+                <div className="mt-2 flex items-center text-sm text-gray-500">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  <span>
+                    Added:{" "}
+                    {material.addDate
+                      ? format(new Date(material.addDate), "MMM d, yyyy")
+                      : "Unknown date"}
+                  </span>
+                </div>
+                <div className="mt-3">
+                  <iframe
+                    src={material.url}
+                    title={material.title}
+                    width="100%"
+                    height="500px"
+                    className="rounded-md border"
+                  />
+                </div>
+              </div>
+              <div className="ml-4 flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownload(material)}
+                >
+                  Download
+                </Button>
+                {isTeacher && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this item?"
+                        )
+                      ) {
+                        onDelete(material.itemId!);
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    // VIDEO
+    if (material.courseMaterialType === "VIDEO") {
+      return (
+        <Card key={material.itemId}>
+          <CardContent className="p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 pt-1">
+                <FileText className="h-6 w-6 text-blue-500" />
+              </div>
+              <div className="ml-4 flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {material.title}
+                </h3>
+                {material.description && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    {material.description}
+                  </p>
+                )}
+                <div className="mt-2 flex items-center text-sm text-gray-500">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  <span>
+                    Added:{" "}
+                    {material.addDate
+                      ? format(new Date(material.addDate), "MMM d, yyyy")
+                      : "Unknown date"}
+                  </span>
+                </div>
+                <div className="mt-3">
+                  <video
+                    controls
+                    src={material.url}
+                    width="100%"
+                    className="rounded-md"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+              <div className="ml-4 flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownload(material)}
+                >
+                  Download
+                </Button>
+                {isTeacher && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this item?"
+                        )
+                      ) {
+                        onDelete(material.itemId!);
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    // Plain text (txt)
+    if (
+      (material.courseMaterialType === "DOCUMENT" ||
+        material.courseMaterialType === "OTHER") &&
+      material.url &&
+      material.url.endsWith(".txt")
+    ) {
+      const [content, setContent] = useState("");
+      const [loading, setLoading] = useState(false);
+      useEffect(() => {
+        let isMounted = true;
+        const fetchText = async () => {
+          setLoading(true);
+          try {
+            const res = await fetch(material.url);
+            const text = await res.text();
+            if (isMounted) setContent(text);
+          } catch (e) {
+            if (isMounted) setContent("Failed to load text file.");
+          } finally {
+            if (isMounted) setLoading(false);
+          }
+        };
+        fetchText();
+        return () => {
+          isMounted = false;
+        };
+      }, [material.url]);
+      return (
+        <Card key={material.itemId}>
+          <CardContent className="p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 pt-1">
+                <FileText className="h-6 w-6 text-blue-500" />
+              </div>
+              <div className="ml-4 flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {material.title}
+                </h3>
+                {material.description && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    {material.description}
+                  </p>
+                )}
+                <div className="mt-2 flex items-center text-sm text-gray-500">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  <span>
+                    Added:{" "}
+                    {material.addDate
+                      ? format(new Date(material.addDate), "MMM d, yyyy")
+                      : "Unknown date"}
+                  </span>
+                </div>
+                <div className="mt-3">
+                  {loading ? (
+                    <div className="text-gray-400 italic">Loading text...</div>
+                  ) : (
+                    <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">
+                      {content}
+                    </pre>
+                  )}
+                </div>
+              </div>
+              <div className="ml-4 flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownload(material)}
+                >
+                  Download
+                </Button>
+                {isTeacher && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this item?"
+                        )
+                      ) {
+                        onDelete(material.itemId!);
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    // Fallback: download only
+    return (
+      <Card key={material.itemId}>
+        <CardContent className="p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0 pt-1">
+              <FileText className="h-6 w-6 text-blue-500" />
+            </div>
+            <div className="ml-4 flex-1">
+              <h3 className="text-lg font-medium text-gray-900">
+                {material.title}
+              </h3>
+              {material.description && (
+                <p className="mt-1 text-sm text-gray-500">
+                  {material.description}
+                </p>
+              )}
+              <div className="mt-2 flex items-center text-sm text-gray-500">
+                <Calendar className="h-4 w-4 mr-1" />
+                <span>
+                  Added:{" "}
+                  {material.addDate
+                    ? format(new Date(material.addDate), "MMM d, yyyy")
+                    : "Unknown date"}
+                </span>
+              </div>
+            </div>
+            <div className="ml-4 flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDownload(material)}
+              >
+                Download
+              </Button>
+              {isTeacher && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Are you sure you want to delete this item?"
+                      )
+                    ) {
+                      onDelete(material.itemId!);
+                    }
+                  }}
+                >
+                  Delete
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const handleDeleteItem = async (itemId: number) => {
+    try {
+      await deleteItem(itemId);
+      // Refresh items
+      if (courseId) {
+        const items = await getCourseItems(Number(courseId));
+        const materialsData = items.filter(
+          (item) => item.itemType === "CM"
+        ) as CourseMaterial[];
+        const quizzesData = items.filter(
+          (item) => item.itemType === "Q"
+        ) as Quiz[];
+        setMaterials(materialsData);
+        setQuizzes(quizzesData);
+      }
+    } catch (err) {
+      alert("Failed to delete item. Please try again.");
+    }
   };
 
   return (
@@ -406,7 +912,19 @@ const CourseDetailsPage = () => {
         <div className="p-6">
           {activeTab === "overview" && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Course Description</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Course Description</h2>
+                {isTeacher && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={deleting}
+                  >
+                    Delete Course
+                  </Button>
+                )}
+              </div>
               <p className="text-gray-700 mb-6">{course.description}</p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -467,76 +985,15 @@ const CourseDetailsPage = () => {
               {materials.length > 0 ? (
                 <div className="space-y-4">
                   {materials.map((material) => (
-                    <Card key={material.itemId}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start">
-                          <div className="flex-shrink-0 pt-1">
-                            <FileText className="h-6 w-6 text-blue-500" />
-                          </div>
-                          <div className="ml-4 flex-1">
-                            <h3 className="text-lg font-medium text-gray-900">
-                              {material.title}
-                            </h3>
-                            {material.description && (
-                              <p className="mt-1 text-sm text-gray-500">
-                                {material.description}
-                              </p>
-                            )}
-                            <div className="mt-2 flex items-center text-sm text-gray-500">
-                              <Calendar className="h-4 w-4 mr-1" />
-                              <span>
-                                Added:{" "}
-                                {material.addDate
-                                  ? format(
-                                      new Date(material.addDate),
-                                      "MMM d, yyyy"
-                                    )
-                                  : "Unknown date"}
-                              </span>
-                            </div>
-
-                            {/* Display image if material type is IMAGE and blob is loaded */}
-                            {material.courseMaterialType === "IMAGE" &&
-                              imageBlobs[material.itemId] && (
-                                <div className="mt-3">
-                                  <img
-                                    src={imageBlobs[material.itemId]}
-                                    alt={material.title}
-                                    className="max-w-full max-h-96 rounded-md shadow-sm cursor-pointer"
-                                    onClick={() =>
-                                      setSelectedImage(
-                                        imageBlobs[material.itemId]
-                                      )
-                                    }
-                                  />
-                                </div>
-                              )}
-                          </div>
-                          <div className="ml-4">
-                            {material.courseMaterialType === "IMAGE" ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() =>
-                                  setSelectedImage(imageBlobs[material.itemId])
-                                }
-                                disabled={!imageBlobs[material.itemId]}
-                              >
-                                View Full Size
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDownload(material)}
-                              >
-                                Download
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <MaterialCard
+                      key={material.itemId}
+                      material={material}
+                      imageBlobs={imageBlobs}
+                      setSelectedImage={setSelectedImage}
+                      handleDownload={handleDownload}
+                      isTeacher={isTeacher}
+                      onDelete={handleDeleteItem}
+                    />
                   ))}
                 </div>
               ) : (
@@ -779,10 +1236,9 @@ const CourseDetailsPage = () => {
           {activeTab === "students" && isTeacher && (
             <div>
               <h2 className="text-xl font-semibold mb-6">Enrolled Students</h2>
-
-              {course.enrollments && course.enrollments.length > 0 ? (
+              {studentEnrollments && studentEnrollments.length > 0 ? (
                 <div className="space-y-4">
-                  {course.enrollments.map((enrollment) => (
+                  {studentEnrollments.map((enrollment) => (
                     <Card key={enrollment.enrollmentId}>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
@@ -830,6 +1286,52 @@ const CourseDetailsPage = () => {
           )}
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+            <h2 className="text-lg font-bold mb-4 text-red-600">
+              Delete Course?
+            </h2>
+            <p className="mb-6">
+              Are you sure you want to delete this course? This action cannot be
+              undone.
+            </p>
+            <div className="flex justify-end space-x-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                isLoading={deleting}
+                onClick={async () => {
+                  setDeleting(true);
+                  try {
+                    if (courseId) {
+                      const success = await deleteCourse(Number(courseId));
+                      if (success) {
+                        navigate("/courses");
+                      } else {
+                        alert("Failed to delete course. Please try again.");
+                      }
+                    }
+                  } finally {
+                    setDeleting(false);
+                    setShowDeleteConfirm(false);
+                  }
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageLayout>
   );
 };

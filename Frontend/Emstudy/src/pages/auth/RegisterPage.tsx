@@ -20,19 +20,7 @@ const RegisterPage: React.FC = () => {
         transition={{ duration: 0.5 }}
         className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-8"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="mx-auto h-12 w-12 text-blue-600"
-        >
-          <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-          <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-        </svg>
+        <img src={"/emsi.svg"} alt="EMSI Logo" className="mx-auto h-12 w-12" />
         <h1 className="mt-3 text-3xl font-extrabold text-gray-900">EMSTUDY</h1>
         <p className="mt-2 text-sm text-gray-600">
           Create your account to get started

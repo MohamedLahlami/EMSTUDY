@@ -73,6 +73,10 @@ public class FileStorageService {
         } catch (IOException ex) {
             System.out.println("Could not determine file type.");
         }
+
+        if (fileName.toLowerCase().endsWith(".md")) {
+            return "text/markdown";
+        }
         return contentType != null ? contentType : "application/octet-stream";
     }
 

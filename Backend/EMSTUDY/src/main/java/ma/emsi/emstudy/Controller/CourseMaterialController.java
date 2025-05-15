@@ -63,7 +63,7 @@ public class CourseMaterialController {
         material.setTitle(title);
 
         CourseMaterialType materialType = CourseMaterialType.from(file.getContentType());
-        System.out.println("Resolved material type: " + materialType); // Debug line
+        System.out.println("Resolved material type: " + materialType);
 
         material.setCourseMaterialType(materialType);
         material.setUrl(uploadDir + "/" + fileName);
@@ -116,6 +116,29 @@ public class CourseMaterialController {
         UrlResource resource = fileStorageService.downloadMaterial(materialId);
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)
+                .body(resource);
+    }
+
+    @Operation(
+            summary = "View markdown material",
+            description = "View a markdown course material directly in the browser",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Markdown displayed successfully"),
+                    @ApiResponse(responseCode = "400", description = "Material is not markdown"),
+                    @ApiResponse(responseCode = "404", description = "Material not found")
+            }
+    )
+    @GetMapping("/markdown/{materialId}")
+    public ResponseEntity<UrlResource> viewMarkdown(
+            @Parameter(description = "ID of the markdown material to view") @PathVariable Long materialId) {
+        CourseMaterial material = courseMaterialService.getCourseItemById(materialId);
+        if (material.getCourseMaterialType() != CourseMaterialType.MARKDOWN) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        UrlResource resource = fileStorageService.downloadMaterial(materialId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/markdown"))
                 .body(resource);
     }
 

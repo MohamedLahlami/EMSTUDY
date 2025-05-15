@@ -159,11 +159,8 @@ export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
           console.warn("Cannot fetch courses: User ID is undefined");
           return [];
         }
-        const allCourses = await courseApi.getAllCourses();
-        return allCourses.filter(
-          (course) =>
-            course.teacher && course.teacher.userId === currentUser.userId
-        );
+        // Backend now returns only the current teacher's courses
+        return await courseApi.getAllCourses();
       }
 
       return [];
@@ -352,45 +349,9 @@ export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
   // Get course details
   const getCourseDetails = async (courseId: number): Promise<Course | null> => {
     clearError();
-
     try {
-      // For students, check enrollment and fetch course directly
-      if (hasRole("Student") && currentUser) {
-        if (!currentUser.userId) {
-          console.warn("Cannot get course details: User ID is undefined");
-          return null;
-        }
-
-        // Get all student enrollments
-        const enrollments = await enrollmentApi.getEnrollmentsByStudent(
-          currentUser.userId
-        );
-
-        // Check if student is enrolled in this course
-        const isEnrolled = enrollments.some((e) => e.courseId === courseId);
-
-        if (!isEnrolled) {
-          setError("You're not enrolled in this course.");
-          return null;
-        }
-
-        // Fetch the course directly
-        return await courseApi.getCourseById(courseId);
-      }
-
-      // For teachers, get it directly and check ownership
-      if (hasRole("Teacher")) {
-        const course = await courseApi.getCourseById(courseId);
-
-        if (course.teacher.userId === currentUser?.userId) {
-          return course;
-        }
-
-        setError("You don't have permission to view this course.");
-        return null;
-      }
-
-      return null;
+      // Just fetch the course, backend handles access control
+      return await courseApi.getCourseById(courseId);
     } catch (err) {
       handleError(err, "Failed to load course details.");
       return null;

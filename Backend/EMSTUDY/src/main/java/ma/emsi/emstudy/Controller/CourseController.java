@@ -54,19 +54,19 @@ public class CourseController {
     }
 
     @Operation(
-        summary = "Get all courses",
-        description = "Retrieves all courses. Only accessible by teachers.",
+        summary = "Get all courses for the teacher",
+        description = "Retrieves all of the teacher courses. Only accessible by teachers.",
         responses = {
             @ApiResponse(responseCode = "200", description = "List of courses retrieved successfully"),
             @ApiResponse(responseCode = "403", description = "User is not authorized")
         }
     )
     @GetMapping
-    public ResponseEntity<List<Course>> getAllCourses(@RequestAttribute("userId") Long userId) {
+    public ResponseEntity<List<Course>> getAllTeacherCourses(@RequestAttribute("userId") Long userId) {
         if (teacherService.getTeacher(userId) == null) {
             throw new ForbiddenAccessException("You are not authorized to view this page");
         }
-        List<Course> courses = courseService.getAllCourses();
+        List<Course> courses = courseService.getAllTeacherCourses(userId);
         return new ResponseEntity<>(courses, HttpStatus.OK);
     }
 

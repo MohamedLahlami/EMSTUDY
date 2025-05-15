@@ -28,7 +28,9 @@ function App() {
   return (
     <AuthProvider>
       <CourseProvider>
-        <Router>
+        <Router
+          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+        >
           <Routes>
             {/* Public Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
@@ -51,13 +53,13 @@ function App() {
             {/* Teacher-only Routes */}
             <Route element={<ProtectedRoute requiredRole="Teacher" />}>
               <Route path="/courses/create" element={<CreateCoursePage />} />
-              <Route 
-                path="/courses/:courseId/quizzes/:quizId/edit" 
-                element={<QuizEditPage />} 
+              <Route
+                path="/courses/:courseId/quizzes/:quizId/edit"
+                element={<QuizEditPage />}
               />
-              <Route 
-                path="/courses/:courseId/quizzes/:quizId/submissions" 
-                element={<QuizSubmissionsPage />} 
+              <Route
+                path="/courses/:courseId/quizzes/:quizId/submissions"
+                element={<QuizSubmissionsPage />}
               />
             </Route>
 

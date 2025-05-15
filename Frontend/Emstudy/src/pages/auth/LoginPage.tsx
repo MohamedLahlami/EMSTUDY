@@ -20,11 +20,7 @@ const LoginPage: React.FC = () => {
         transition={{ duration: 0.5 }}
         className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-8"
       >
-        <img
-          src={import.meta.env.BASE_URL + "src/static/emsi.svg"}
-          alt="EMSI Logo"
-          className="mx-auto h-12 w-12"
-        />
+        <img src={"/emsi.svg"} alt="EMSI Logo" className="mx-auto h-12 w-12" />
         <h1 className="mt-3 text-3xl font-extrabold text-[#008d36]">EMSTUDY</h1>
         <p className="mt-2 text-sm text-gray-600">
           Your virtual classroom platform

@@ -3,13 +3,13 @@ package ma.emsi.emstudy.Controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import ma.emsi.emstudy.DTO.UserRegisterDTO;
 import ma.emsi.emstudy.Entity.Student;
 import ma.emsi.emstudy.Entity.Teacher;
 import ma.emsi.emstudy.Security.AuthenticationService;
 import ma.emsi.emstudy.Service.UserService;
 import ma.emsi.emstudy.DTO.AuthResponse;
 import ma.emsi.emstudy.DTO.LoginRequest;
-import ma.emsi.emstudy.DTO.UserDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -51,7 +51,7 @@ public class AuthController {
             description = "Creates a new user and returns the created user object, `role` field should be `Student` or `Teacher`"
     )
     @PostMapping("/register")
-    public ResponseEntity<?> addTeacher(@RequestBody UserDTO userDto) {
+    public ResponseEntity<?> addTeacher(@RequestBody UserRegisterDTO userDto) {
         if (userService.existsByEmail(userDto.getEmail())) {
             return new ResponseEntity<>("User with this email already exists", HttpStatus.CONFLICT);
         }

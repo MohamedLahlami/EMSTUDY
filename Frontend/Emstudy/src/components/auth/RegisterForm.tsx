@@ -149,6 +149,36 @@ const RegisterForm: React.FC = () => {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              I am a:
+            </label>
+            <div className="flex space-x-4">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  className="form-radio text-blue-600"
+                  name="role"
+                  value="Student"
+                  checked={formData.role === "Student"}
+                  onChange={handleInputChange}
+                />
+                <span className="ml-2">Student</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  className="form-radio text-blue-600"
+                  name="role"
+                  value="Teacher"
+                  checked={formData.role === "Teacher"}
+                  onChange={handleInputChange}
+                />
+                <span className="ml-2">Teacher</span>
+              </label>
+            </div>
+          </div>
+
           {/* For teachers */}
           {formData.role === "Teacher" && (
             <div>
@@ -180,36 +210,6 @@ const RegisterForm: React.FC = () => {
               />
             </div>
           )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              I am a:
-            </label>
-            <div className="flex space-x-4">
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  className="form-radio text-blue-600"
-                  name="role"
-                  value="Student"
-                  checked={formData.role === "Student"}
-                  onChange={handleInputChange}
-                />
-                <span className="ml-2">Student</span>
-              </label>
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  className="form-radio text-blue-600"
-                  name="role"
-                  value="Teacher"
-                  checked={formData.role === "Teacher"}
-                  onChange={handleInputChange}
-                />
-                <span className="ml-2">Teacher</span>
-              </label>
-            </div>
-          </div>
         </div>
 
         <div>
