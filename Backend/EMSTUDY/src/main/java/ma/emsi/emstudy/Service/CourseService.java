@@ -2,6 +2,7 @@ package ma.emsi.emstudy.Service;
 
 import lombok.RequiredArgsConstructor;
 import ma.emsi.emstudy.Entity.Course;
+import ma.emsi.emstudy.Entity.CourseItem;
 import ma.emsi.emstudy.Repository.CourseRepo;
 import org.springframework.stereotype.Service;
 
@@ -15,11 +16,16 @@ public class CourseService {
 
     public Course addCourse(Course course) {
         course.setCreationDate(LocalDate.now());
+        if (course.getCourseItems() != null) {
+            for (CourseItem item : course.getCourseItems()) {
+                item.setCourse(course);
+            }
+        }
         return courseRepo.save(course);
     }
 
     public List<Course> getAllTeacherCourses(Long teacherId) {
-    return courseRepo.findByTeacherUserId(teacherId);
+        return courseRepo.findByTeacherUserId(teacherId);
     }
 
     public Course getCourseById(Long id) {
