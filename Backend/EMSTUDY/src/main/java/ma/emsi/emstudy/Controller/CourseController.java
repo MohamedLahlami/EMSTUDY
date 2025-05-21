@@ -127,7 +127,7 @@ public class CourseController {
     public ResponseEntity<Course> updateCourse(
         @Parameter(description = "Updated course details") @RequestBody Course course,
         @RequestAttribute("userId") Long userId) {
-        if (courseService.isTeacherOfCourse(userId, course.getCourseId())) {
+        if (!courseService.isTeacherOfCourse(userId, course.getCourseId())) {
             throw new ForbiddenAccessException("You are not authorized to update this course");
         }
         Course updatedCourse = courseService.updateCourse(course);
