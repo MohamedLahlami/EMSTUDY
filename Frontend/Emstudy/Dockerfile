@@ -1,9 +1,9 @@
 # Frontend : frontend/Dockerfile
-FROM node:16-alpine AS build
+FROM node:18-alpine AS build
 WORKDIR /app
-COPY Frontend/Emstudy/package*.json ./
+COPY package*.json ./
 RUN npm ci
-COPY Frontend/Emstudy/. .
+COPY . .
 RUN npm run build
 
 FROM nginx:alpine
