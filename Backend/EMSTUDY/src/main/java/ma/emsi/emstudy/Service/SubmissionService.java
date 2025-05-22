@@ -107,4 +107,8 @@ public class SubmissionService {
     public List<Submission> getSubmissionsByStudent(Long userId) {
         return submissionRepo.findByStudentUserId(userId);
     }
+
+    public List<Submission> getSubmissionsByQuiz(Long quizId) {
+        return submissionRepo.findByQuizItemId(quizId);
+    }
 }

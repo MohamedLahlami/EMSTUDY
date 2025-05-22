@@ -11,6 +11,7 @@ import ma.emsi.emstudy.Exception.ForbiddenAccessException;
 import ma.emsi.emstudy.Exception.ResourceNotFoundException;
 import ma.emsi.emstudy.Service.StudentService;
 import ma.emsi.emstudy.Service.SubmissionService;
+import ma.emsi.emstudy.Service.TeacherService; // Added import
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +27,7 @@ public class SubmissionController {
 
     private final SubmissionService submissionService;
     private final StudentService studentService;
+    private final TeacherService teacherService; // Added TeacherService
 
     @Operation(
         summary = "Get all submissions",

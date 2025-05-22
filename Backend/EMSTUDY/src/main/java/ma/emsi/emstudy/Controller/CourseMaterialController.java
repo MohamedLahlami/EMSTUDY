@@ -6,12 +6,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import ma.emsi.emstudy.DTO.SubmissionDTO;
 import ma.emsi.emstudy.Entity.CourseMaterial;
 import ma.emsi.emstudy.Entity.CourseMaterialType;
+import ma.emsi.emstudy.Entity.Submission;
 import ma.emsi.emstudy.Exception.InvalidInputException;
-import ma.emsi.emstudy.Service.CourseMaterialService;
-import ma.emsi.emstudy.Service.CourseService;
-import ma.emsi.emstudy.Service.FileStorageService;
+import ma.emsi.emstudy.Service.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +33,8 @@ public class CourseMaterialController {
     private final CourseService courseService;
     private final FileStorageService fileStorageService;
     private final CourseMaterialService courseMaterialService;
+    private final SubmissionService submissionService;
+    private final QuizService quizService;
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
@@ -77,22 +79,26 @@ public class CourseMaterialController {
     }
 
     @Operation(
-        summary = "Download course material",
-        description = "Download a specific course material file",
+        summary = "Download or view course material",
+        description = "Download or view a specific course material file. Set download=true to download the file, or false to view it in the browser",
         responses = {
-            @ApiResponse(responseCode = "200", description = "File downloaded successfully"),
+            @ApiResponse(responseCode = "200", description = "File served successfully"),
             @ApiResponse(responseCode = "404", description = "Material not found")
         }
     )
     @GetMapping("/{materialId}")
-    public ResponseEntity<UrlResource> downloadMaterial(
-            @Parameter(description = "ID of the material to download") @PathVariable Long materialId) {
+    public ResponseEntity<UrlResource> serveMaterial(
+            @Parameter(description = "ID of the material to serve") @PathVariable Long materialId,
+            @Parameter(description = "Whether to download the file (true) or view it in browser (false)", 
+                    required = false) @RequestParam(defaultValue = "false") boolean download) {
+
         UrlResource resource = fileStorageService.downloadMaterial(materialId);
         String contentType = fileStorageService.getMaterialContentType(materialId);
+        String dispositionType = download ? "attachment" : "inline";
 
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, dispositionType + "; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
     }
 
@@ -192,4 +198,36 @@ public class CourseMaterialController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(
+        summary = "Get submissions by quiz",
+        description = "Retrieve all submissions for a specific quiz. Only accessible to teachers of the course containing the quiz.",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "List of submissions retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "User is not authorized to view submissions for this quiz"),
+            @ApiResponse(responseCode = "404", description = "Quiz not found or course not found")
+        }
+    )
+    @GetMapping("/quiz/{quizId}/submissions")
+    public ResponseEntity<List<SubmissionDTO>> getSubmissionsByQuiz(
+            @Parameter(description = "ID of the quiz") @PathVariable Long quizId,
+            @RequestAttribute("userId") Long userId) {
+
+        if (!courseService.isTeacherOfCourse(userId, quizService.getCourseItemById(quizId).getCourse().getCourseId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        List<SubmissionDTO> submissions = submissionService.getSubmissionsByQuiz(quizId).stream().map((submission) -> {
+            return SubmissionDTO.builder()
+                    .submissionId(submission.getSubmissionId())
+                    .studentId(submission.getStudent().getUserId())
+                    .quizId(submission.getQuiz().getItemId())
+                    .startTime(submission.getStartTime())
+                    .endTime(submission.getEndTime())
+                    .submitted(submission.isSubmitted())
+                    .score(submission.getScore())
+                    .answers(submission.getAnswers())
+                    .username(submission.getStudent().getUsername())
+                    .build();}).toList();
+        return ResponseEntity.ok(submissions);
+    }
 }
