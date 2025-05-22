@@ -1,5 +1,5 @@
 import api from "./apiClient";
-import { Submission, Answer } from "../types";
+import { Submission, Answer, SubmissionDTO } from "../types";
 
 export const startSubmission = async (quizId: number): Promise<Submission> => {
   const res = await api.post<Submission>(
@@ -58,4 +58,19 @@ export const hasAttemptedQuiz = async (quizId: number): Promise<boolean> => {
     console.error("Error checking quiz attempts:", error);
     return false; // Assume not attempted if there's an error
   }
+};
+
+/**
+ * Retrieves all submissions for a specific quiz.
+ * (Typically for a teacher to view)
+ * @param quizId The ID of the quiz.
+ * @returns A promise that resolves to an array of quiz submissions.
+ */
+export const getSubmissionsForQuizByTeacher = async (
+  quizId: number
+): Promise<SubmissionDTO[]> => {
+  const res = await api.get<SubmissionDTO[]>(
+    `/materials/quiz/${quizId}/submissions`
+  );
+  return res.data;
 };

@@ -18,7 +18,10 @@ import Button from "../../components/ui/Button";
 import { Course, CourseMaterial, Quiz, Submission } from "../../types";
 import api from "../../api/apiClient";
 import QuizManager from "../../components/quiz/QuizManager";
-import { getMarkdownMaterial } from "../../api/materialApi";
+import {
+  getMaterialFileContent, // Import the updated function
+  getMarkdownMaterial,
+} from "../../api/materialApi"; // Adjust path if necessary
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { deleteItem } from "../../api/courseItemApi";
@@ -49,7 +52,6 @@ const CourseDetailsPage = () => {
     createMaterial,
     createQuiz,
     getCurrentUserSubmissions,
-    hasAttemptedQuiz,
     deleteCourse,
   } = useCourses();
 
@@ -75,27 +77,26 @@ const CourseDetailsPage = () => {
   };
 
   // Function to handle downloading files with authentication
-  const handleDownload = async (material: CourseMaterial) => {
+  const handleDownload = async (materialToDownload: CourseMaterial) => {
+    if (!materialToDownload.itemId) return;
     try {
-      const response = await api.get(`/materials/${material.itemId}`, {
-        responseType: "blob",
-      });
-
-      // Create a blob URL and trigger download
-      const blob = new Blob([response.data]);
+      const blob = await getMaterialFileContent(
+        materialToDownload.itemId,
+        true
+      ); // true for download
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      // Add appropriate file extension to the download
-      const extension = getFileExtension(material);
-      a.download = `${material.title}${extension}`;
+      // Try to get a sensible filename
+      a.download =
+        materialToDownload.title || `material-${materialToDownload.itemId}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      a.remove();
     } catch (error) {
-      console.error("Failed to download material:", error);
-      alert("Failed to download. Please try again.");
+      console.error("Error downloading material:", error);
+      // Add user feedback (e.g., toast notification)
     }
   };
 
@@ -540,6 +541,36 @@ const CourseDetailsPage = () => {
     }
     // PDF
     if (material.courseMaterialType === "PDF") {
+      const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+      const [pdfLoading, setPdfLoading] = useState(false);
+
+      useEffect(() => {
+        let isMounted = true;
+        if (material.itemId) {
+          setPdfLoading(true);
+          getMaterialFileContent(material.itemId, false) // false for inline display
+            .then((blob) => {
+              if (isMounted) {
+                const objectUrl = URL.createObjectURL(blob);
+                setPdfUrl(objectUrl);
+              }
+            })
+            .catch((err) => {
+              console.error("Failed to load PDF for inline display", err);
+              if (isMounted) setPdfUrl(null); // Or set an error state
+            })
+            .finally(() => {
+              if (isMounted) setPdfLoading(false);
+            });
+        }
+        return () => {
+          isMounted = false;
+          if (pdfUrl && pdfUrl.startsWith("blob:")) {
+            URL.revokeObjectURL(pdfUrl); // Clean up object URL
+          }
+        };
+      }, [material.itemId]); // Removed pdfUrl from dependencies to avoid re-fetch loops
+
       return (
         <Card key={material.itemId}>
           <CardContent className="p-4">
@@ -566,20 +597,24 @@ const CourseDetailsPage = () => {
                   </span>
                 </div>
                 <div className="mt-3">
-                  <iframe
-                    src={material.url}
-                    title={material.title}
-                    width="100%"
-                    height="500px"
-                    className="rounded-md border"
-                  />
+                  {pdfLoading && <p>Loading PDF preview...</p>}
+                  {!pdfLoading && pdfUrl && (
+                    <iframe
+                      src={pdfUrl} // Use the object URL
+                      title={material.title}
+                      width="100%"
+                      height="500px"
+                      className="rounded-md border"
+                    />
+                  )}
+                  {!pdfLoading && !pdfUrl && <p>Could not load PDF preview.</p>}
                 </div>
               </div>
               <div className="ml-4 flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleDownload(material)}
+                  onClick={() => handleDownload(material)} // Uses the updated handleDownload
                 >
                   Download
                 </Button>
@@ -634,21 +669,25 @@ const CourseDetailsPage = () => {
                   </span>
                 </div>
                 <div className="mt-3">
-                  <video
-                    controls
-                    src={material.url}
-                    width="100%"
-                    className="rounded-md"
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+                  {material.url ? (
+                    <video
+                      src={material.url}
+                      controls
+                      width="100%"
+                      className="rounded-md border"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <p>Video URL not available.</p>
+                  )}
                 </div>
               </div>
               <div className="ml-4 flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleDownload(material)}
+                  onClick={() => handleDownload(material)} // Uses the updated handleDownload
                 >
                   Download
                 </Button>
@@ -795,14 +834,17 @@ const CourseDetailsPage = () => {
                     : "Unknown date"}
                 </span>
               </div>
+              <p className="mt-3 text-sm text-gray-600">
+                Preview not available for this file type.
+              </p>
             </div>
             <div className="ml-4 flex gap-2">
               <Button
-                variant="outline"
+                variant="primary" // Or outline
                 size="sm"
-                onClick={() => handleDownload(material)}
+                onClick={() => handleDownload(material)} // Uses the updated handleDownload
               >
-                Download
+                Download {material.courseMaterialType?.toLowerCase()}
               </Button>
               {isTeacher && (
                 <Button
