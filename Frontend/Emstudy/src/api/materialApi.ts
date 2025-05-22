@@ -39,23 +39,39 @@ export const getMaterialsByCourse = async (
   return res.data;
 };
 
-export const downloadMaterial = async (materialId: number): Promise<Blob> => {
-  const res = await api.get(`/materials/${materialId}`, {
-    responseType: "blob",
-  });
+/**
+ * Fetches the actual file content of a material.
+ * @param materialId The ID of the material.
+ * @param forDownload If true, requests the content with Content-Disposition: attachment.
+ *                    If false, requests inline disposition.
+ * @returns A promise that resolves to a Blob.
+ */
+export const getMaterialFileContent = async (
+  materialId: number,
+  forDownload: boolean
+): Promise<Blob> => {
+  const res = await api.get(
+    `/materials/${materialId}?download=${forDownload}`,
+    {
+      // Added ?download=${forDownload}
+      responseType: "blob",
+    }
+  );
   return res.data;
 };
 
 export const getMaterialById = async (
+  // This one fetches metadata
   itemId: number
 ): Promise<CourseMaterial> => {
-  const res = await api.get<CourseMaterial>(`/materials/${itemId}`);
+  const res = await api.get<CourseMaterial>(`/materials/${itemId}`); // This endpoint might now be just for metadata
   return res.data;
 };
 
 export const getMarkdownMaterial = async (
   materialId: number
 ): Promise<string> => {
+  // Assuming markdown is always fetched for inline display and has a separate endpoint
   const res = await api.get(`/materials/markdown/${materialId}`, {
     responseType: "text",
   });

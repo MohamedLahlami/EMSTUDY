@@ -7,14 +7,8 @@ import { Card, CardContent } from "../../components/ui/Card";
 import { useAuth } from "../../context/AuthContext";
 import { useCourses } from "../../context/CourseContext";
 import { format } from "date-fns";
-import { Quiz, Submission, Student } from "../../types";
-
-// Mock API function for submissions - will be replaced with real API calls
-const getSubmissionsByQuiz = async (quizId: number): Promise<Submission[]> => {
-  // This is a placeholder - in a real implementation, we'd use an API call
-  console.log("Fetching submissions for quiz", quizId);
-  return []; // Return empty array for now
-};
+import { Quiz, SubmissionDTO } from "../../types"; // Changed Submission to SubmissionDTO
+import { getSubmissionsForQuizByTeacher } from "../../api/submissionApi";
 
 const QuizSubmissionsPage: React.FC = () => {
   const { courseId, quizId } = useParams();
@@ -23,7 +17,7 @@ const QuizSubmissionsPage: React.FC = () => {
   const { getQuizDetails } = useCourses();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [submissions, setSubmissions] = useState<SubmissionDTO[]>([]); // Use SubmissionDTO[]
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,8 +32,10 @@ const QuizSubmissionsPage: React.FC = () => {
         const quizData = await getQuizDetails(Number(quizId));
         setQuiz(quizData);
 
-        // Load submissions
-        const submissionsData = await getSubmissionsByQuiz(Number(quizId));
+        // Load submissions using the new API function
+        const submissionsData = await getSubmissionsForQuizByTeacher(
+          Number(quizId)
+        );
         setSubmissions(submissionsData);
 
         setLoading(false);
@@ -73,18 +69,69 @@ const QuizSubmissionsPage: React.FC = () => {
 
   // Filter submissions based on search term
   const filteredSubmissions = submissions.filter((submission) => {
-    const student = submission.student;
+    if (!submission) {
+      // Check if submission itself is defined
+      return false;
+    }
     const searchLower = searchTerm.toLowerCase();
-    return (
-      student.username.toLowerCase().includes(searchLower) ||
-      student.email.toLowerCase().includes(searchLower) ||
-      (student.studentGroup &&
-        student.studentGroup.toLowerCase().includes(searchLower))
-    );
+    // Search directly on submission.username
+    return submission.username?.toLowerCase().includes(searchLower);
   });
 
-  const formatDateTime = (dateString: string) => {
+  const formatDateTime = (dateString: string | undefined) => {
+    // Made dateString optional
+    if (!dateString) return "N/A"; // Handle undefined dateString
     return format(new Date(dateString), "MMM d, yyyy HH:mm");
+  };
+
+  const handleExportResults = () => {
+    if (!quiz || filteredSubmissions.length === 0) {
+      alert("No data to export.");
+      return;
+    }
+
+    const headers = [
+      "Submission ID",
+      "Student ID",
+      "Student Username",
+      "Start Time",
+      "End Time",
+      "Score",
+      "Status",
+    ];
+
+    const rows = filteredSubmissions.map((sub) => [
+      sub.submissionId,
+      sub.studentId,
+      sub.username,
+      formatDateTime(sub.startTime),
+      formatDateTime(sub.endTime),
+      sub.score?.toFixed(1) ?? "N/A",
+      sub.submitted ? "Submitted" : "In Progress",
+    ]);
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += headers.join(",") + "\r\n";
+    rows.forEach((rowArray) => {
+      const row = rowArray.join(",");
+      csvContent += row + "\r\n";
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    const safeQuizTitle = quiz.title
+      .replace(/[^a-z0-9_]+/gi, "-")
+      .toLowerCase();
+    link.setAttribute(
+      "download",
+      `${safeQuizTitle}_submissions_${
+        new Date().toISOString().split("T")[0]
+      }.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -124,9 +171,7 @@ const QuizSubmissionsPage: React.FC = () => {
                 <Button
                   variant="outline"
                   icon={<Download size={16} />}
-                  onClick={() =>
-                    alert("Export feature will be implemented later")
-                  }
+                  onClick={handleExportResults} // Updated onClick handler
                 >
                   Export Results
                 </Button>
@@ -141,7 +186,7 @@ const QuizSubmissionsPage: React.FC = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search by student name, email or group..."
+                placeholder="Search by student username..." // Updated placeholder
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -162,7 +207,8 @@ const QuizSubmissionsPage: React.FC = () => {
               <table className="min-w-full bg-white border border-gray-200 rounded-lg">
                 <thead>
                   <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <th className="px-6 py-3 border-b">Student</th>
+                    <th className="px-6 py-3 border-b">Student (ID)</th>{" "}
+                    {/* Updated Header */}
                     <th className="px-6 py-3 border-b">Start Time</th>
                     <th className="px-6 py-3 border-b">End Time</th>
                     <th className="px-6 py-3 border-b">Score</th>
@@ -179,16 +225,12 @@ const QuizSubmissionsPage: React.FC = () => {
                       <td className="px-6 py-4">
                         <div>
                           <div className="font-medium text-gray-900">
-                            {submission.student.username}
+                            {submission.username}{" "}
+                            {/* Use submission.username */}
                           </div>
                           <div className="text-gray-500 text-sm">
-                            {submission.student.email}
+                            ID: {submission.studentId} {/* Display studentId */}
                           </div>
-                          {submission.student.studentGroup && (
-                            <div className="text-gray-500 text-xs">
-                              Group: {submission.student.studentGroup}
-                            </div>
-                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm">
@@ -200,7 +242,8 @@ const QuizSubmissionsPage: React.FC = () => {
                       <td className="px-6 py-4 text-sm">
                         {submission.submitted ? (
                           <span className="font-medium">
-                            {submission.score.toFixed(1)}
+                            {submission.score?.toFixed(1)}{" "}
+                            {/* Optional chaining for score */}
                           </span>
                         ) : (
                           <span className="text-gray-500">-</span>

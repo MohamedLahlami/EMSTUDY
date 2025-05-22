@@ -271,7 +271,6 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                       updateAnswer(index, "correct", e.target.checked)
                     }
                     className="mt-1"
-                    disabled={isTrueFalse}
                   />
                   <input
                     type="text"
@@ -281,7 +280,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                     }
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
                     placeholder="Answer text"
-                    disabled={isTrueFalse}
+                    disabled={isTrueFalse} // Text input remains disabled for True/False
                     required
                   />
                 </div>

@@ -105,7 +105,7 @@ export interface Question {
 }
 
 export interface Answer {
-  answerId: number | null;
+  answerId?: number | null; // Made answerId consistently nullable like others
   answerText: string;
   question?: Question;
   correct: boolean;
@@ -120,4 +120,17 @@ export interface Submission {
   answers: Answer[];
   quiz: Quiz;
   student: Student;
+}
+
+// New DTO for quiz submissions by teacher
+export interface SubmissionDTO {
+  submissionId: number;
+  startTime: string; // Assuming ISO string format from backend
+  endTime: string; // Assuming ISO string format from backend
+  submitted: boolean;
+  score: number;
+  studentId: number;
+  quizId: number;
+  answers: Answer[]; // Re-using existing Answer type
+  username: string; // Student's username
 }
