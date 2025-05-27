@@ -2,7 +2,7 @@ import api from "./apiClient";
 import { Enrollment } from "../types";
 
 export const enrollInCourse = async (joinCode: string): Promise<Enrollment> => {
-  const res = await api.post<Enrollment>(
+  const res = await api.get<Enrollment>(
     `/enrollments/enroll?joinCode=${joinCode}`
   );
   return res.data;

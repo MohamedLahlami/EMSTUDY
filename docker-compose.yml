@@ -7,11 +7,21 @@ services:
       MYSQL_PASSWORD: pass
       MYSQL_ROOT_PASSWORD: rootpass
     ports:
-      - "3307:3306"          # hôte:conteneur
+      - "3307:3306" # hôte:conteneur
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpass"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-prootpass",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,13 +43,15 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - ./Backend/EMSTUDY/uploads:/app/uploads
     networks:
       - app-network
 
   frontend:
     build:
-      context: .
-      dockerfile: Frontend/Emstudy/Dockerfile
+      context: ./Frontend/Emstudy
+      dockerfile: Dockerfile
     ports:
       - "80:80"
     depends_on:

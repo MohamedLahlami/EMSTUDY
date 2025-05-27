@@ -34,7 +34,7 @@ public class EnrollmentController {
                     @ApiResponse(responseCode = "404", description = "Course not found")
             }
     )
-    @PostMapping("/enroll")
+    @GetMapping("/enroll")
     public ResponseEntity<Enrollment> createEnrollment(
             @Parameter(description = "Course join code") @RequestParam String joinCode,
             @RequestAttribute("userId") Long userId) {
@@ -131,37 +131,37 @@ public class EnrollmentController {
         return toEnrollmentDTO(enrollments);
     }
 
-@Operation(
-        summary = "Update enrollment",
-        description = "Update an existing enrollment",
-        responses = {
-                @ApiResponse(responseCode = "200", description = "Enrollment updated successfully"),
-                @ApiResponse(responseCode = "404", description = "Enrollment not found"),
-                @ApiResponse(responseCode = "400", description = "Invalid input")
-        }
-)
-@PutMapping("/{enrollmentId}")
-public ResponseEntity<Enrollment> updateEnrollment(
-        @Parameter(description = "ID of the enrollment") @PathVariable Long enrollmentId,
-        @Parameter(description = "Updated enrollment details") @RequestBody Enrollment enrollmentDetails) {
-    Enrollment updatedEnrollment = enrollmentService.updateEnrollment(enrollmentId, enrollmentDetails);
-    return updatedEnrollment != null
-            ? ResponseEntity.ok(updatedEnrollment)
-            : ResponseEntity.notFound().build();
-}
+    @Operation(
+            summary = "Update enrollment",
+            description = "Update an existing enrollment",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Enrollment updated successfully"),
+                    @ApiResponse(responseCode = "404", description = "Enrollment not found"),
+                    @ApiResponse(responseCode = "400", description = "Invalid input")
+            }
+    )
+    @PutMapping("/{enrollmentId}")
+    public ResponseEntity<Enrollment> updateEnrollment(
+            @Parameter(description = "ID of the enrollment") @PathVariable Long enrollmentId,
+            @Parameter(description = "Updated enrollment details") @RequestBody Enrollment enrollmentDetails) {
+        Enrollment updatedEnrollment = enrollmentService.updateEnrollment(enrollmentId, enrollmentDetails);
+        return updatedEnrollment != null
+                ? ResponseEntity.ok(updatedEnrollment)
+                : ResponseEntity.notFound().build();
+    }
 
-@Operation(
-        summary = "Delete enrollment",
-        description = "Delete a specific enrollment",
-        responses = {
-                @ApiResponse(responseCode = "204", description = "Enrollment deleted successfully"),
-                @ApiResponse(responseCode = "404", description = "Enrollment not found")
-        }
-)
-@DeleteMapping("/{enrollmentId}")
-public ResponseEntity<Void> deleteEnrollment(
-        @Parameter(description = "ID of the enrollment") @PathVariable Long enrollmentId) {
-    enrollmentService.deleteEnrollment(enrollmentId);
-    return ResponseEntity.noContent().build();
-}
+    @Operation(
+            summary = "Delete enrollment",
+            description = "Delete a specific enrollment",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "Enrollment deleted successfully"),
+                    @ApiResponse(responseCode = "404", description = "Enrollment not found")
+            }
+    )
+    @DeleteMapping("/{enrollmentId}")
+    public ResponseEntity<Void> deleteEnrollment(
+            @Parameter(description = "ID of the enrollment") @PathVariable Long enrollmentId) {
+        enrollmentService.deleteEnrollment(enrollmentId);
+        return ResponseEntity.noContent().build();
+    }
 }
