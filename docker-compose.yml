@@ -51,7 +51,7 @@ services:
   frontend:
     build:
       context: ./Frontend/Emstudy
-      dockerfile: Frontend/Emstudy/Dockerfile
+      dockerfile: Dockerfile
     ports:
       - "80:80"
     depends_on:
