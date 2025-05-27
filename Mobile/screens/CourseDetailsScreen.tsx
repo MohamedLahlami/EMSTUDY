@@ -12,6 +12,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { toast } from "sonner-native";
 import { getAuthData } from "../utils/tokenStorage";
+import { serverConfig } from '../utils/serverConfig';
 
 export default function CourseDetailsScreen() {
   const [course, setCourse] = useState(null);
@@ -21,6 +22,7 @@ export default function CourseDetailsScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { courseId } = route.params;
+  const baseUrl = serverConfig.getBaseUrl();
 
   useEffect(() => {
     fetchCourseDetails();
@@ -37,14 +39,11 @@ export default function CourseDetailsScreen() {
   const fetchCourseDetails = async () => {
     try {
       const authData = await getAuthData();
-      const response = await fetch(
-        `http://192.168.11.170:8080/courses/${courseId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authData?.token}`,
-          },
-        }
-      );
+      const response = await fetch(`${baseUrl}/courses/${courseId}`, {
+        headers: {
+          Authorization: `Bearer ${authData?.token}`,
+        },
+      });
       const data = await response.json();
       setCourse(data);
     } catch (error) {
@@ -55,14 +54,11 @@ export default function CourseDetailsScreen() {
   const fetchCourseItems = async () => {
     try {
       const authData = await getAuthData();
-      const response = await fetch(
-        `http://192.168.11.170:8080/items/course/${courseId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authData?.token}`,
-          },
-        }
-      );
+      const response = await fetch(`${baseUrl}/items/course/${courseId}`, {
+        headers: {
+          Authorization: `Bearer ${authData?.token}`,
+        },
+      });
       const data = await response.json();
       setItems(data);
     } catch (error) {
@@ -75,14 +71,11 @@ export default function CourseDetailsScreen() {
 
     try {
       const authData = await getAuthData();
-      const response = await fetch(
-        `http://192.168.11.170:8080/completed-items/course/${courseId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authData?.token}`,
-          },
-        }
-      );
+      const response = await fetch(`${baseUrl}/completed-items/course/${courseId}`, {
+        headers: {
+          Authorization: `Bearer ${authData?.token}`,
+        },
+      });
       const data = await response.json();
       setCompletedItems(data.map((item) => item.courseItem.itemId));
     } catch (error) {
@@ -98,27 +91,21 @@ export default function CourseDetailsScreen() {
         const completedItem = completedItems.find(
           (item) => item.courseItem.itemId === itemId
         );
-        await fetch(
-          `http://192.168.11.170:8080/completed-items/${completedItem.completedCourseItemId}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${authData?.token}`,
-            },
-          }
-        );
+        await fetch(`${baseUrl}/completed-items/${completedItem.completedCourseItemId}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${authData?.token}`,
+          },
+        });
         setCompletedItems((prev) => prev.filter((id) => id !== itemId));
       } else {
         // Mark as completed
-        await fetch(
-          `http://192.168.11.170:8080/completed-items/?itemId=${itemId}`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${authData?.token}`,
-            },
-          }
-        );
+        await fetch(`${baseUrl}/completed-items/?itemId=${itemId}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${authData?.token}`,
+          },
+        });
         setCompletedItems((prev) => [...prev, itemId]);
       }
       toast.success("Progress updated");

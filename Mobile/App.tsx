@@ -12,6 +12,9 @@ import CourseDetailsScreen from "./screens/CourseDetailsScreen";
 import CreateCourseScreen from "./screens/CreateCourseScreen";
 import TakeQuizScreen from "./screens/TakeQuizScreen";
 import QuizResultsScreen from "./screens/QuizResultsScreen";
+import CreateQuizScreen from "./screens/CreateQuizScreen";
+import CreateMaterialScreen from "./screens/CreateMaterialScreen";
+import ServerSettingsScreen from "./screens/ServerSettingsScreen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 const Stack = createNativeStackNavigator();
@@ -34,6 +37,9 @@ function RootStack() {
       <Stack.Screen name="CreateCourse" component={CreateCourseScreen} />
       <Stack.Screen name="TakeQuiz" component={TakeQuizScreen} />
       <Stack.Screen name="QuizResults" component={QuizResultsScreen} />
+      <Stack.Screen name="CreateQuiz" component={CreateQuizScreen} />
+      <Stack.Screen name="CreateMaterial" component={CreateMaterialScreen} />
+      <Stack.Screen name="ServerSettings" component={ServerSettingsScreen} />
     </Stack.Navigator>
   );
 }

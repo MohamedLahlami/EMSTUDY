@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { toast } from "sonner-native";
+import { serverConfig } from "../utils/serverConfig";
 
 export default function RegisterScreen() {
   const [formData, setFormData] = useState({
@@ -27,6 +28,8 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
+  const baseUrl = serverConfig.getBaseUrl();
+
   const handleRegister = async () => {
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match");
@@ -35,7 +38,7 @@ export default function RegisterScreen() {
 
     try {
       setLoading(true);
-      const response = await fetch("http://192.168.11.170:8080/auth/register", {
+      const response = await fetch(`${baseUrl}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

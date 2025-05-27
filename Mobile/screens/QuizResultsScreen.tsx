@@ -11,12 +11,14 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { toast } from "sonner-native";
 import { getAuthData } from "../utils/tokenStorage";
+import { serverConfig } from "../utils/serverConfig";
 
 export default function QuizResultsScreen() {
   const [submission, setSubmission] = useState(null);
   const navigation = useNavigation();
   const route = useRoute();
   const { submissionId } = route.params;
+  const baseUrl = serverConfig.getBaseUrl();
 
   useEffect(() => {
     fetchSubmissionDetails();
@@ -25,14 +27,11 @@ export default function QuizResultsScreen() {
   const fetchSubmissionDetails = async () => {
     try {
       const authData = await getAuthData();
-      const response = await fetch(
-        `http://192.168.11.170:8080/submissions/${submissionId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authData?.token}`,
-          },
-        }
-      );
+      const response = await fetch(`${baseUrl}/submissions/${submissionId}`, {
+        headers: {
+          Authorization: `Bearer ${authData?.token}`,
+        },
+      });
       const data = await response.json();
       setSubmission(data);
     } catch (error) {

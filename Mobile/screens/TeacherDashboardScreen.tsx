@@ -11,6 +11,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { toast } from "sonner-native";
 import { getAuthData } from "../utils/tokenStorage";
+import { serverConfig } from "../utils/serverConfig";
 
 export default function TeacherDashboardScreen() {
   const [courses, setCourses] = useState([]);
@@ -29,7 +30,8 @@ export default function TeacherDashboardScreen() {
         return;
       }
 
-      const response = await fetch("http://192.168.11.170:8080/courses", {
+      const baseUrl = serverConfig.getBaseUrl();
+      const response = await fetch(`${baseUrl}/courses`, {
         headers: {
           Authorization: `Bearer ${authData.token}`,
         },

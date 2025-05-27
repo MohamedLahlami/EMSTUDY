@@ -12,12 +12,15 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { toast } from "sonner-native";
 import { getAuthData } from "../utils/tokenStorage";
+import { serverConfig } from "../utils/serverConfig";
 
 export default function CreateCourseScreen() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
+  const baseUrl = serverConfig.getBaseUrl();
+
   const handleCreate = async () => {
     if (!name.trim() || !description.trim()) {
       toast.error("Please fill in all fields");
@@ -33,7 +36,7 @@ export default function CreateCourseScreen() {
         return;
       }
 
-      const response = await fetch("http://192.168.11.170:8080/courses", {
+      const response = await fetch(`${baseUrl}/courses`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -13,6 +13,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { toast } from "sonner-native";
 import { setAuthData } from "../utils/tokenStorage";
+import { serverConfig } from '../utils/serverConfig';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -20,10 +21,12 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
+  const baseUrl = serverConfig.getBaseUrl();
+
   const handleLogin = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://192.168.11.170:8080/auth/login", {
+      const response = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

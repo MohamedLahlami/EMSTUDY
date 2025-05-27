@@ -19,18 +19,15 @@ class ServerConfig {
 
     // Sinon, utiliser les valeurs par défaut selon la plateforme
     if (Platform.OS === "web") {
-      // En local, utiliser 192.168.11.170
-      return "http://192.168.11.170:8080";
+      return "http://localhost:8080";
     } else if (Platform.OS === "android") {
-      // Pour les émulateurs Android, 10.0.2.2 correspond à 192.168.11.170 de la machine hôte
       return "http://10.0.2.2:8080";
     } else if (Platform.OS === "ios") {
-      // Pour les simulateurs iOS
-      return "http://192.168.11.170:8080";
+      return "http://192.168.11.194:8080";
     }
 
     // Appareil physique, utiliser l'adresse IP locale par défaut
-    return "http://192.168.1.100:8080";
+    return "http://localhost:8080";
   }
 
   /**
@@ -181,3 +178,14 @@ export const serverConfig = new ServerConfig();
 
 // Initialiser la configuration au démarrage de l'application
 serverConfig.init().catch(console.error);
+
+let baseUrl = "http://localhost:8080"; // Default value, change as needed
+
+export function getBaseUrl() {
+  return baseUrl;
+}
+
+export function setBaseUrl(url: string) {
+  console.log("setBaseUrl", url);
+  baseUrl = url;
+}

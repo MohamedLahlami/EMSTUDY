@@ -11,6 +11,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { toast } from "sonner-native";
 import { getAuthData } from "../utils/tokenStorage";
+import { serverConfig } from '../utils/serverConfig';
 
 export default function TakeQuizScreen() {
   const [quiz, setQuiz] = useState(null);
@@ -22,6 +23,7 @@ export default function TakeQuizScreen() {
   const route = useRoute();
   const { quizId } = route.params;
   const timerRef = useRef(null);
+  const baseUrl = serverConfig.getBaseUrl();
 
   useEffect(() => {
     fetchQuizDetails();
@@ -36,7 +38,7 @@ export default function TakeQuizScreen() {
     try {
       const authData = await getAuthData();
       const response = await fetch(
-        `http://192.168.11.170:8080/items/${quizId}`,
+        `${baseUrl}/items/${quizId}`,
         {
           headers: {
             Authorization: `Bearer ${authData?.token}`,
@@ -48,7 +50,7 @@ export default function TakeQuizScreen() {
 
       // Start quiz
       const submissionResponse = await fetch(
-        `http://192.168.11.170:8080/submissions/start/?quizId=${quizId}`,
+        `${baseUrl}/submissions/start/?quizId=${quizId}`,
         {
           method: "POST",
           headers: {
@@ -66,7 +68,7 @@ export default function TakeQuizScreen() {
 
       // Fetch questions
       const questionsResponse = await fetch(
-        `http://192.168.11.170:8080/questions/quiz/${quizId}`,
+        `${baseUrl}/questions/quiz/${quizId}`,
         {
           headers: {
             Authorization: `Bearer ${authData?.token}`,
@@ -128,7 +130,7 @@ export default function TakeQuizScreen() {
       const answers = Object.values(selectedAnswers).flat();
 
       await fetch(
-        `http://192.168.11.170:8080/submissions/${submission.submissionId}`,
+        `${baseUrl}/submissions/${submission.submissionId}`,
         {
           method: "PUT",
           headers: {

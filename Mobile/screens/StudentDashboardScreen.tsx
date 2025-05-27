@@ -12,11 +12,14 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { toast } from "sonner-native";
 import { getAuthData } from "../utils/tokenStorage";
+import { serverConfig } from "../utils/serverConfig";
 
 export default function StudentDashboardScreen() {
   const [courses, setCourses] = useState([]);
   const [joinCode, setJoinCode] = useState("");
   const navigation = useNavigation();
+
+  const baseUrl = serverConfig.getBaseUrl();
 
   useEffect(() => {
     fetchEnrollments();
@@ -30,7 +33,7 @@ export default function StudentDashboardScreen() {
         return;
       }
 
-      const response = await fetch("http://192.168.11.170:8080/enrollments", {
+      const response = await fetch(`${baseUrl}/enrollments`, {
         headers: {
           Authorization: `Bearer ${authData.token}`,
         },
@@ -52,7 +55,7 @@ export default function StudentDashboardScreen() {
       }
 
       const response = await fetch(
-        `http://192.168.11.170:8080/enrollments/enroll?joinCode=${joinCode}`,
+        `${baseUrl}/enrollments/enroll?joinCode=${joinCode}`,
         {
           method: "POST",
           headers: {
