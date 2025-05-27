@@ -50,7 +50,7 @@ services:
 
   frontend:
     build:
-      context: .
+      context: ./Frontend/Emstudy
       dockerfile: Frontend/Emstudy/Dockerfile
     ports:
       - "80:80"
