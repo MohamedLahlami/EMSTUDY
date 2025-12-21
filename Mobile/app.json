@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "emstudy",
+    "slug": "snack-67d43537-a6fa-4c09-96fe-352060db6df6",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/emsi.svg",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#008d36"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#008d36"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "description": "Quickly generate React Native components with AI"
+  }
+}
